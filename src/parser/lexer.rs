@@ -5,11 +5,11 @@ use regex::Regex;
 /// The diffrent Keywords used in PANG
 /// 
 /// It has 13 Tokens
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Token {
     Type,
     Name,
-    Fields,
+    End,
     Create,
     Query,
     Put,
@@ -25,6 +25,7 @@ pub enum Token {
 }
 
 /// Defines where a given [`TokenDefinition`] has matched the source
+#[derive(Debug)]
 pub struct TokenMatch {
     pub token: Token,
     pub value: String,
@@ -34,6 +35,7 @@ pub struct TokenMatch {
 }
 
 /// Adds extra information to [`Token`]
+#[derive(Debug)]
 pub struct TokenDefinition {
     pub regex: Regex,
     pub token: Token,
@@ -54,8 +56,8 @@ impl TokenDefinition {
     }
 
     /// Match the source string against the TokenDefinition
-    pub fn match_text(&self, source: &String, already_matched: &Vec<TokenMatch>) -> Vec<TokenMatch> {
-        let mut result = Vec::<TokenMatch>::new();
+    pub fn match_text(&self, source: &String, already_matched: &mut Vec<TokenMatch>) {
+        let mut result: Vec<TokenMatch> = Vec::new();
         let captures = self.regex.captures_iter(source);
         for capture in captures {
             if capture.get(0).is_some() {
@@ -79,7 +81,7 @@ impl TokenDefinition {
                 }
             }
         }
-        result
+        already_matched.append(&mut result);
     }
 
     /// Returns true if first [`Range`] is overlapping second [`Range`]

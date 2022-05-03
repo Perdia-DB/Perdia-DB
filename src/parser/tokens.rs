@@ -6,7 +6,7 @@ pub fn initialize() -> Vec<TokenDefinition> {
 
     token_definitions.push(TokenDefinition::new(Token::Query, r"QUERY", 1));
     token_definitions.push(TokenDefinition::new(Token::Create, r"CREATE", 1));
-    token_definitions.push(TokenDefinition::new(Token::Fields, r"FIELDS", 1));
+    token_definitions.push(TokenDefinition::new(Token::End, r"END", 1));
     token_definitions.push(TokenDefinition::new(Token::Type, r"TYPE", 1));
     token_definitions.push(TokenDefinition::new(Token::ENDL, r";", 1));
     token_definitions.push(TokenDefinition::new(Token::Name, r"NAME", 1));
