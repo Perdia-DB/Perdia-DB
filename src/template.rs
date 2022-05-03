@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-type Data = (Option<String>, Option<f64>, u8);
+type Data = (Option<String>, Option<f64>, Option<i64>, u8);
 
 pub struct Template {
     name: String,

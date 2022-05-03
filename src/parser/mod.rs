@@ -1,17 +1,13 @@
-pub mod template;
+use lazy_static::lazy_static;
+use lexer::TokenDefinition;
 
-enum Keywords {
-    Type,
-    Name,
-    Fields,
-    Create,
-    Query,
-    Put,
-    Get,
-    String,
-    Integer,
-    Float,
-    Starting,
-    ENDL,
-    Literal(String)
+pub mod lexer;
+pub mod tokens;
+
+lazy_static! {
+    pub static ref TOKEN_DEFINITIONS: Vec<TokenDefinition> = tokens::initialize();
+}
+
+pub fn parse() {
+    
 }
