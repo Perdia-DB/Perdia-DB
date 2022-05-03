@@ -5,7 +5,7 @@ use regex::Regex;
 /// The diffrent Keywords used in PANG
 /// 
 /// It has 13 Tokens
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Type,
     Name,
@@ -25,7 +25,7 @@ pub enum Token {
 }
 
 /// Defines where a given [`TokenDefinition`] has matched the source
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TokenMatch {
     pub token: Token,
     pub value: String,

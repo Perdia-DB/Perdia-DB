@@ -1,5 +1,6 @@
 mod parser;
-mod template;
+mod data;
+mod query;
 
 fn main() {
 
@@ -13,6 +14,6 @@ fn main() {
     END;
     "#.to_string();
 
-    let out = parser::parse(&source);
-    out.iter().for_each(|m| println!("{:?}", m));
+    let parsed_data = parser::parse(&source);
+    query::data(parsed_data);
 }

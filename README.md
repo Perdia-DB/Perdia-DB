@@ -54,11 +54,11 @@ QUERY "Monday" GET "First" "Second";
 
 Query objects by type
 ```
-QUERY TYPE GET "DAY" GET "First";
-QUERY TYPE GET "DAY" GET "First" "Seconds";
+QUERY TYPE "DAY" GET "First";
+QUERY TYPE "DAY" GET "First" "Seconds";
 ```
 
 Query all types
 ```
-QUERY TYPE
+QUERY TYPE;
 ```
