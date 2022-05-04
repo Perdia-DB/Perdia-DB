@@ -1,3 +1,5 @@
+use crate::data::{template::Template, TEMPLATES, NEW_TEMPLATE};
+
 use super::parser::lexer::{Token, TokenMatch};
 
 mod queries;
@@ -17,50 +19,110 @@ impl std::fmt::Debug for PangQueryError {
     }
 }
 
-/// Query the parsed data from memory
-// TODO: Rework the Query system to use a more modular approach.
-pub fn data(parsed_data: Vec<Vec<TokenMatch>>) -> Result<String, PangQueryError> {
-    for line in parsed_data {
-        if line.len() < 2 { continue }
-        let token_match = line.get(0).unwrap();
-        match token_match.token {
-            Token::Type => todo!(),
-            Token::Name => todo!(),
-            Token::Create => todo!(),
-            Token::Query => {
-                let token_match = line.get(1).unwrap();
-                match token_match.token {
-                    Token::Literal => {
 
-                    }
-                    Token::Type => {
-                        if line.len() == 2 {
-                            return Ok(serde_json::to_string(&queries::query_registered_types()).unwrap_err().to_string());
-                        }
-                        let token_match = line.get(2).unwrap();
-                        match token_match.token {
-                            Token::Literal => {
-                                let instances = queries::query_types(&token_match.value);
-                                if line.len() == 3 {
-                                    return Ok(serde_json::to_string(&instances).unwrap_err().to_string());
-                                }
-                                let token_match = line.get(3).unwrap();
-                                match token_match.token {
-                                    Token::Get => {
-                                        let (_, right) = line.split_at(4);
-                                        let 
-                                    },
-                                    _ => { return Err(PangQueryError) }
-                                }
-                            }
-                            _ => { return Err(PangQueryError) }
-                        }
-                    }
-                    _ => { return Err(PangQueryError) }
-                }
+
+trait Executable {
+    fn execute(&self, input: Option<Vec<Template>>, arguments: Vec<Argument>) -> Result<Vec<Template>, PangQueryError>;
+}
+
+impl Executable for Token {
+    fn execute(&self, input: Option<Vec<Template>>, mut arguments: Vec<Argument>) -> Result<Vec<Template>, PangQueryError> {
+        match self {
+            Token::Create => {
+                let name = match arguments.remove(0) {
+                    Argument::Literal(value) => value,
+                    _ => return Err(PangQueryError),
+                };
+                let template = Template::instance(name.to_string()).build();
+                Ok(vec![template])
             },
-            _ => { return Err(PangQueryError); }
+            Token::Query => todo!(),
+            Token::Put => todo!(),
+            Token::Get => todo!(),
+            Token::Type => {
+                let template: Template = match input {
+                    Some(mut input) => {
+                        let mut input = input.remove(0);
+                        input.name = match arguments.remove(0) {
+                            Argument::Literal(value) => Some(value),
+                            _ => return Err(PangQueryError)
+                        };
+                        let mut base = TEMPLATES.iter().filter(|t| t.name == input.name).collect::<Vec<&Template>>();
+                        input.data = base.remove(0).data.clone();
+                        input
+                    },
+                    None => {
+                        let name = match arguments.get(0).unwrap() {
+                            Argument::Literal(value) => value,
+                            _ => return Err(PangQueryError)
+                        };
+                        let builder = Template::new(name.to_string());
+                        let mut mutex = NEW_TEMPLATE.lock().unwrap();
+                        *mutex = Some(builder.clone());
+                        builder.build()
+                    },
+                };
+                Ok(vec![template])
+            },
+            Token::Name => todo!(),
+            Token::Starting => todo!(),
+            Token::End => todo!(),
+            _ => { return Err(PangQueryError) }
         }
     }
+}
+
+enum DataType {
+    String,
+    Integer,
+    Float,
+}
+
+enum Argument {
+    Literal(String),
+    Literals(Vec<String>),
+    DataType(DataType),
+    Type
+}
+
+#[derive(Copy, Clone, PartialEq)]
+enum Block {
+    Declaration,
+    Statement
+}
+
+pub fn declarations(lines: Vec<Vec<TokenMatch>>) {
+    let endings = lines.iter().enumerate()
+        .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
+        .map(|(index, _)| index)
+        .collect::<Vec<usize>>();
+    let blocks: Vec<Vec<Vec<TokenMatch>>> = Vec::with_capacity(endings)
+}
+
+/// Query the parsed data from memory
+pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, PangQueryError> {
+    
+    // Mark diffrent blocks
+    let mut blocks: Vec<Block> = Vec::new();
+    for line in &lines {
+        blocks.push(match line.get(0).unwrap().token {
+            Token::Type => Block::Declaration,
+            Token::Name => Block::Declaration,
+            Token::End => Block::Declaration,
+            _ => Block::Statement,
+        });
+    }
+
+    let declarations = lines.iter()
+        .enumerate().filter(|(index, _)| *blocks.get(*index).unwrap() == Block::Declaration)
+        .map(|(_, e)| e.clone())
+        .collect::<Vec<Vec<TokenMatch>>>();
+    let statements = lines.iter()
+        .enumerate().filter(|(index, _)| *blocks.get(*index).unwrap() == Block::Statement)
+        .map(|(_, e)| e.clone())
+        .collect::<Vec<Vec<TokenMatch>>>();
+
+
+
     Ok("".to_owned())
 }

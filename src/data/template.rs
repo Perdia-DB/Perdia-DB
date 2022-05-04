@@ -12,21 +12,33 @@ pub enum DataType {
 
 #[derive(Serialize, Deserialize)]
 pub struct Template {
-    pub name: String,
+    pub name: Option<String>,
+    pub instance: Option<String>,
     pub data: HashMap<String, (DataType, Data)>
 }
 
 impl Template {
     pub fn new(name: String) -> TemplateBuilder {
         TemplateBuilder {
-            name,
+            name: Some(name),
+            instance: None,
+            data: None,
+        }
+    }
+
+    pub fn instance(instance: String) -> TemplateBuilder {
+        TemplateBuilder {
+            name: None,
+            instance: Some(instance),
             data: None,
         }
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct TemplateBuilder {
-    name: String,
+    name: Option<String>,
+    instance: Option<String>,
     data: Option<HashMap<String, (DataType, Data)>>
 }
 
@@ -42,7 +54,16 @@ impl TemplateBuilder {
         }
         Template {
             name: self.name,
+            instance: None,
             data,
+        }
+    }
+
+    pub fn with_name(&self, name: String) -> Self {
+        Self {
+            name: self.name.clone(),
+            instance: Some(name),
+            data: self.data.clone()
         }
     }
 
@@ -53,6 +74,7 @@ impl TemplateBuilder {
             data.insert(name, (DataType::STRING, value));
             Self {
                 name: self.name.clone(),
+                instance: self.instance.clone(),
                 data: Some(data),
             }
         } else {
@@ -61,6 +83,7 @@ impl TemplateBuilder {
             data.insert(name, (DataType::STRING, value));
             Self {
                 name: self.name.clone(),
+                instance: self.instance.clone(),
                 data: Some(data),
             }
         }
@@ -73,6 +96,7 @@ impl TemplateBuilder {
             data.insert(name, (DataType::INTEGER, value));
             Self {
                 name: self.name.clone(),
+                instance: self.instance.clone(),
                 data: Some(data),
             }
         } else {
@@ -81,6 +105,7 @@ impl TemplateBuilder {
             data.insert(name, (DataType::STRING, value));
             Self {
                 name: self.name.clone(),
+                instance: self.instance.clone(),
                 data: Some(data),
             }
         }
@@ -93,6 +118,7 @@ impl TemplateBuilder {
             data.insert(name, (DataType::INTEGER, value));
             Self {
                 name: self.name.clone(),
+                instance: self.instance.clone(),
                 data: Some(data),
             }
         } else {
@@ -101,6 +127,7 @@ impl TemplateBuilder {
             data.insert(name, (DataType::STRING, value));
             Self {
                 name: self.name.clone(),
+                instance: self.instance.clone(),
                 data: Some(data),
             }
         }

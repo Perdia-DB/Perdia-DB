@@ -5,7 +5,7 @@ use regex::Regex;
 /// The diffrent Keywords used in PANG
 /// 
 /// It has 13 Tokens
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Token {
     Type,
     Name,
