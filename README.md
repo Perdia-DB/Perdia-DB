@@ -1,5 +1,6 @@
 # Perdia-DB
 A simple key value database for storing simple structures.
+No nesting of structures is supported, but may be implemented in the future.
 
 ## Tokens
 
@@ -20,12 +21,14 @@ A simple key value database for storing simple structures.
 |Name|Descirption
 |-|-|
 |OK|No get queries were done and everything went fine.|
+|PUT_ERR|There was an error with a PUT command.| 
 
 
 ## Example
 
 ### Declare Templates
 
+Declaration of templates should only occur in their own request. Although everything works fine when it is not.
 ```
 TYPE "DAY";
 NAME "First" TYPE STRING STARTING "Nothing";
@@ -38,6 +41,7 @@ END;
 
 ### Create Objects
 
+Make a instance of a defined template with a key.
 ```
 CREATE "Monday" TYPE "DAY";
 ```
@@ -54,8 +58,8 @@ QUERY "Monday" GET "First" "Second";
 
 Query objects by type
 ```
-QUERY TYPE "DAY" GET "First";
-QUERY TYPE "DAY" GET "First" "Seconds";
+QUERY TYPE GET "DAY" GET "First";
+QUERY TYPE GET "DAY" GET "First" "Seconds";
 ```
 
 Query all types

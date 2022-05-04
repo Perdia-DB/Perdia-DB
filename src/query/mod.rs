@@ -17,9 +17,8 @@ impl std::fmt::Debug for PangQueryError {
     }
 }
 
-/// Query the parsed data from database
-// TODO: Instead of getting everything from vec use enumerator and next element.
-// TODO: Finish the queries!
+/// Query the parsed data from memory
+// TODO: Rework the Query system to use a more modular approach.
 pub fn data(parsed_data: Vec<Vec<TokenMatch>>) -> Result<String, PangQueryError> {
     for line in parsed_data {
         if line.len() < 2 { continue }
@@ -41,7 +40,18 @@ pub fn data(parsed_data: Vec<Vec<TokenMatch>>) -> Result<String, PangQueryError>
                         let token_match = line.get(2).unwrap();
                         match token_match.token {
                             Token::Literal => {
-
+                                let instances = queries::query_types(&token_match.value);
+                                if line.len() == 3 {
+                                    return Ok(serde_json::to_string(&instances).unwrap_err().to_string());
+                                }
+                                let token_match = line.get(3).unwrap();
+                                match token_match.token {
+                                    Token::Get => {
+                                        let (_, right) = line.split_at(4);
+                                        let 
+                                    },
+                                    _ => { return Err(PangQueryError) }
+                                }
                             }
                             _ => { return Err(PangQueryError) }
                         }
