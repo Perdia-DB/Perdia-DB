@@ -6,6 +6,7 @@ pub enum RequestError {
     DeclarationError,
     InvalidField,
     InvalidType,
+    SyntaxError,
 }
 
 impl std::fmt::Display for RequestError {

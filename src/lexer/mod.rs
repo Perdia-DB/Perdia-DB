@@ -1,9 +1,7 @@
-use std::string::ParseError;
-
 use lazy_static::lazy_static;
-use lexer::{Token, TokenMatch, TokenDefinition};
+use data::{Token, TokenMatch, TokenDefinition};
 
-pub mod lexer;
+pub mod data;
 pub mod tokens;
 
 

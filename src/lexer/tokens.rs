@@ -1,4 +1,4 @@
-use super::lexer::{Token, TokenDefinition};
+use super::data::{Token, TokenDefinition};
 
 /// Initializes every [`TokenDefinition`]
 pub fn initialize() -> Vec<TokenDefinition> {

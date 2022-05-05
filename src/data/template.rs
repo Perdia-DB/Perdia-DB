@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize, de::Visitor};
 
 use super::serialization::{Data, DataType, DataUnion};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Template {
     pub name: Option<String>,
     pub instance: Option<String>,
