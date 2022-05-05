@@ -36,12 +36,11 @@ impl Serialize for Data {
     where
         S: serde::Serializer 
     {
-        let mut s = match self.data_type {
+        match self.data_type {
             DataType::STRING => unsafe { serializer.serialize_str(self.data.string) },
             DataType::INTEGER => unsafe { serializer.serialize_i64(self.data.integer) },
             DataType::FLOAT => unsafe { serializer.serialize_f64(self.data.float) },
-        };
-        s
+        }
     }
 }
 

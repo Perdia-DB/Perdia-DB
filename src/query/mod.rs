@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-use crate::data::{template::Template, TEMPLATES, NEW_TEMPLATE};
+use crate::data::{template::Template, TEMPLATES};
 
 use super::parser::lexer::{Token, TokenMatch};
 
-mod queries;
+mod response;
 
 /// Gets thrown if the source is invalid or the parser has trouble doing it's job.
 pub struct PangQueryError;
@@ -39,74 +39,6 @@ impl std::error::Error for PangDeclarationError {
     fn cause(&self) -> Option<&dyn std::error::Error> {
         self.source()
     }
-}
-
-
-trait Executable {
-    fn execute(&self, input: Option<Vec<Template>>, arguments: Vec<Argument>) -> Result<Vec<Template>, PangQueryError>;
-}
-
-// For refrence
-/*
-impl Executable for Token {
-    fn execute(&self, input: Option<Vec<Template>>, mut arguments: Vec<Argument>) -> Result<Vec<Template>, PangQueryError> {
-        match self {
-            Token::Create => {
-                let name = match arguments.remove(0) {
-                    Argument::Literal(value) => value,
-                    _ => return Err(PangQueryError),
-                };
-                let template = Template::instance(name.to_string()).build();
-                Ok(vec![template])
-            },
-            Token::Query => todo!(),
-            Token::Put => todo!(),
-            Token::Get => todo!(),
-            Token::Type => {
-                let template: Template = match input {
-                    Some(mut input) => {
-                        let mut input = input.remove(0);
-                        input.name = match arguments.remove(0) {
-                            Argument::Literal(value) => Some(value),
-                            _ => return Err(PangQueryError)
-                        };
-                        let mut base = TEMPLATES.iter().filter(|t| t.name == input.name).collect::<Vec<&Template>>();
-                        input.data = base.remove(0).data.clone();
-                        input
-                    },
-                    None => {
-                        let name = match arguments.get(0).unwrap() {
-                            Argument::Literal(value) => value,
-                            _ => return Err(PangQueryError)
-                        };
-                        let builder = Template::new(name.to_string());
-                        let mut mutex = NEW_TEMPLATE.lock().unwrap();
-                        *mutex = Some(builder.clone());
-                        builder.build()
-                    },
-                };
-                Ok(vec![template])
-            },
-            Token::Name => todo!(),
-            Token::Starting => todo!(),
-            Token::End => todo!(),
-            _ => { return Err(PangQueryError) }
-        }
-    }
-}
-*/
-
-enum DataType {
-    String,
-    Integer,
-    Float,
-}
-
-enum Argument {
-    Literal(String),
-    Literals(Vec<String>),
-    DataType(DataType),
-    Type
 }
 
 #[derive(Copy, Clone, PartialEq)]

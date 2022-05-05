@@ -38,6 +38,20 @@ NAME "Day" TYPE INTEGER STARTING 1;
 NAME "Seconds" TYPE FLOAT;
 END;
 ```
+👇
+```json
+{
+  "name": "DAY",
+  "instance": null,
+  "data": {
+    "First": "Nothing",
+    "Second": "Nothing",
+    "Third": "Nothing",
+    "Day": 1,
+    "Seconds": 0.0
+  }
+}
+```
 
 ### Create Objects
 

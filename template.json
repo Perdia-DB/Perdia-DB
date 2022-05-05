@@ -3,10 +3,10 @@
     "name": "DAY",
     "instance": null,
     "data": {
-      "Second": "Nothing",
-      "Day": 1,
-      "Seconds": 0.0,
       "Third": "Nothing",
+      "Second": "Nothing",
+      "Seconds": 0.0,
+      "Day": 1,
       "First": "Nothing"
     }
   }
