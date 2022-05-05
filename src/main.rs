@@ -1,3 +1,6 @@
+use data::{TEMPLATES, template::Template};
+use serde_json::*;
+
 mod parser;
 mod data;
 mod query;
@@ -14,6 +17,10 @@ fn main() {
     END;
     "#.to_string();
 
+    let start = std::time::Instant::now();
     let parsed_data = parser::parse(&source);
-    query::data(parsed_data);
+    query::data(parsed_data).unwrap();
+    println!("Took: {:?}", start.elapsed());
+    let temp = TEMPLATES.lock().unwrap();
+    std::fs::write("./template.json", serde_json::to_string_pretty(&*temp).unwrap()).unwrap();
 }

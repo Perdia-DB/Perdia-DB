@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::data::{template::Template, TEMPLATES, NEW_TEMPLATE};
 
 use super::parser::lexer::{Token, TokenMatch};
@@ -20,24 +22,32 @@ impl std::fmt::Debug for PangQueryError {
 }
 
 /// Gets thrown if the source has an invalid template or instance declaration.
+#[derive(Debug)]
 pub struct PangDeclarationError;
 
 impl std::fmt::Display for PangDeclarationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error occurred while declaring instance or template query!")
+        todo!()
     }
 }
 
-impl std::fmt::Debug for PangDeclarationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{ file: {}, line: {} }}", file!(), line!())
+impl std::error::Error for PangDeclarationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        self.source()
     }
 }
+
 
 trait Executable {
     fn execute(&self, input: Option<Vec<Template>>, arguments: Vec<Argument>) -> Result<Vec<Template>, PangQueryError>;
 }
 
+// For refrence
+/*
 impl Executable for Token {
     fn execute(&self, input: Option<Vec<Template>>, mut arguments: Vec<Argument>) -> Result<Vec<Template>, PangQueryError> {
         match self {
@@ -84,6 +94,7 @@ impl Executable for Token {
         }
     }
 }
+*/
 
 enum DataType {
     String,
@@ -104,7 +115,7 @@ enum Block {
     Statement
 }
 
-pub fn declarations(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationError>{
+pub fn declare(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationError>{
     let mut endings = lines.iter().enumerate()
         .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
         .map(|(index, _)| index)
@@ -125,25 +136,43 @@ pub fn declarations(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationEr
         let first = block.remove(0);
         // Validate statement begin
         if first.len() != 2 { return Err(PangDeclarationError); }
+        // Get name of template
         let name = first.get(1).unwrap();
         let mut template = Template::new(name.value.clone());
-        block.remove(block.len()-1);
+        // Loop over field declaration lines
         for line in block {
+            
+            // if the line only has 4 tokens then it has no starting value
             if line.len() == 4 {
                 let field = line.get(1).unwrap();
                 let data_type = line.get(3).unwrap();
                 template = match data_type.token {
-                    Token::StringType => template.with_string(field.value.clone(), None),
-                    Token::IntegerType => template.with_integer(field.value.clone(), None),
-                    Token::FloatType => template.with_float(field.value.clone(), None),
+                    Token::StringType => template.with_string(field.value.clone(), Some("".to_owned())),
+                    Token::IntegerType => template.with_integer(field.value.clone(), Some(0)),
+                    Token::FloatType => template.with_float(field.value.clone(), Some(0.0)),
                     _ => { return Err(PangDeclarationError); }
                 }
-            } if line.len() == 6 {
-                
+            // if it has 6 tokens it has a starting value
+            } else if line.len() == 6 {
+                let field = line.get(1).unwrap();
+                let data_type = line.get(3).unwrap();
+                let starting = line.get(5).unwrap();
+                println!("{:?} has type {:?} starting {:?}", field.value, data_type.token, starting.value);
+                template = match data_type.token {
+                    Token::StringType => template.with_string(field.value.clone(), Some(starting.value.clone())),
+                    Token::IntegerType => template.with_integer(field.value.clone(), Some(starting.value.clone().parse::<i64>().unwrap())),
+                    Token::FloatType => template.with_float(field.value.clone(), Some(starting.value.clone().parse::<f64>().unwrap())),
+                    _ => { return Err(PangDeclarationError); }
+                }
+            // throw an error at any other size
             } else {
                 return Err(PangDeclarationError)
             }
         }
+        // Push the template onto the static mutex
+        let template = template.build();
+        let mut mutex = TEMPLATES.lock().unwrap();
+        mutex.push(template);
     }
 
     Ok(())
@@ -163,7 +192,7 @@ pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, PangQueryError> {
         });
     }
 
-    let declarations = lines.iter()
+    let objects = lines.iter()
         .enumerate().filter(|(index, _)| *blocks.get(*index).unwrap() == Block::Declaration)
         .map(|(_, e)| e.clone())
         .collect::<Vec<Vec<TokenMatch>>>();
@@ -171,7 +200,7 @@ pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, PangQueryError> {
         .enumerate().filter(|(index, _)| *blocks.get(*index).unwrap() == Block::Statement)
         .map(|(_, e)| e.clone())
         .collect::<Vec<Vec<TokenMatch>>>();
-
+    declare(objects).unwrap();
 
 
     Ok("".to_owned())

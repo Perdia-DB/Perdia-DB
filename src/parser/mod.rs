@@ -29,6 +29,6 @@ pub fn parse(source: &String) -> Vec<Vec<TokenMatch>> {
         }
         lines.push(line);
     });
-    
+    lines.remove(lines.len()-1);
     lines
 }
