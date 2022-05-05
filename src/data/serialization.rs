@@ -6,6 +6,31 @@ pub union DataUnion {
     pub float: f64,
 }
 
+impl From<Option<&'static str>> for DataUnion {
+    fn from(string: Option<&'static str>) -> Self {
+        DataUnion { string: string.unwrap_or_default() }
+    }
+}
+
+impl From<Option<String>> for DataUnion {
+    fn from(string: Option<String>) -> Self {
+        DataUnion { string: Box::leak(string.unwrap_or_default().into_boxed_str()) }
+    }
+}
+
+impl From<Option<i64>> for DataUnion {
+    fn from(int: Option<i64>) -> Self {
+        DataUnion { integer: int.unwrap_or_default() }
+    }
+}
+
+impl From<Option<f64>> for DataUnion {
+    fn from(float: Option<f64>) -> Self {
+        DataUnion { float: float.unwrap_or_default() }
+    }
+}
+
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum DataType {
     STRING,
