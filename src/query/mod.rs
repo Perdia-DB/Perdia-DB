@@ -19,7 +19,20 @@ impl std::fmt::Debug for PangQueryError {
     }
 }
 
+/// Gets thrown if the source has an invalid template or instance declaration.
+pub struct PangDeclarationError;
 
+impl std::fmt::Display for PangDeclarationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Error occurred while declaring instance or template query!")
+    }
+}
+
+impl std::fmt::Debug for PangDeclarationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{ file: {}, line: {} }}", file!(), line!())
+    }
+}
 
 trait Executable {
     fn execute(&self, input: Option<Vec<Template>>, arguments: Vec<Argument>) -> Result<Vec<Template>, PangQueryError>;
@@ -91,12 +104,49 @@ enum Block {
     Statement
 }
 
-pub fn declarations(lines: Vec<Vec<TokenMatch>>) {
-    let endings = lines.iter().enumerate()
+pub fn declarations(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationError>{
+    let mut endings = lines.iter().enumerate()
         .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
         .map(|(index, _)| index)
         .collect::<Vec<usize>>();
-    let blocks: Vec<Vec<Vec<TokenMatch>>> = Vec::with_capacity(endings)
+    endings.insert(0, 0);
+
+    let mut blocks: Vec<Vec<Vec<TokenMatch>>> = Vec::with_capacity(endings.len());
+    for (index, ending) in endings.iter().enumerate() {
+        let next = endings.get(index+1);
+        if next.is_none() { break; }
+        let next = next.unwrap();
+
+        let mut clone = lines.clone();
+        blocks.push(clone.drain(*ending..*next).collect())
+    }
+    // parse a single declaration block.
+    for mut block in blocks {
+        let first = block.remove(0);
+        // Validate statement begin
+        if first.len() != 2 { return Err(PangDeclarationError); }
+        let name = first.get(1).unwrap();
+        let mut template = Template::new(name.value.clone());
+        block.remove(block.len()-1);
+        for line in block {
+            if line.len() == 4 {
+                let field = line.get(1).unwrap();
+                let data_type = line.get(3).unwrap();
+                template = match data_type.token {
+                    Token::StringType => template.with_string(field.value.clone(), None),
+                    Token::IntegerType => template.with_integer(field.value.clone(), None),
+                    Token::FloatType => template.with_float(field.value.clone(), None),
+                    _ => { return Err(PangDeclarationError); }
+                }
+            } if line.len() == 6 {
+                
+            } else {
+                return Err(PangDeclarationError)
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Query the parsed data from memory
