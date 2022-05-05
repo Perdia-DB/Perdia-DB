@@ -37,13 +37,8 @@ pub struct TemplateBuilder {
 impl TemplateBuilder {
 
     pub fn build(self) -> Template {
-        let data;
-        if self.data.is_none() {
-            data = HashMap::new();
-        }
-        else {
-            data = self.data.unwrap();
-        }
+        let data = self.data.unwrap_or_default();
+    
         Template {
             name: self.name,
             instance: None,
@@ -59,69 +54,26 @@ impl TemplateBuilder {
         }
     }
 
-    pub fn with_string(&self, name: String, string: Option<String>) -> Self {
-        if self.data.is_none() {
-            let value: Data = Data { data_type: DataType::STRING, data: DataUnion { string: Box::leak(string.unwrap_or("".to_string()).into_boxed_str()) } };
-            let mut data: HashMap<String, Data> = HashMap::new();
-            data.insert(name, value);
-            Self {
-                name: self.name.clone(),
-                instance: self.instance.clone(),
-                data: Some(data),
-            }
-        } else {
-            let mut data = self.data.clone().unwrap();
-            let value: Data = Data { data_type: DataType::STRING, data: DataUnion { string: Box::leak(string.unwrap().into_boxed_str()) } };
-            data.insert(name, value);
-            Self {
-                name: self.name.clone(),
-                instance: self.instance.clone(),
-                data: Some(data),
-            }
+    fn with(&self, name: String, data: DataUnion, data_type: DataType) -> Self {
+        let value = Data { data_type, data };
+        let mut data: HashMap<String, Data> = HashMap::new();
+        data.insert(name, value);
+        Self {
+            name: self.name.clone(),
+            instance: self.instance.clone(),
+            data: Some(data),
         }
+    }
+
+    pub fn with_string(&self, name: String, string: Option<String>) -> Self {
+        self.with(name, string.into(), DataType::STRING)
     }
 
     pub fn with_integer(&self, name: String, int: Option<i64>) -> Self {
-        if self.data.is_none() {
-            let value: Data = Data { data_type: DataType::INTEGER, data: DataUnion { integer: int.unwrap_or(0) } };
-            let mut data: HashMap<String, Data> = HashMap::new();
-            data.insert(name, value);
-            Self {
-                name: self.name.clone(),
-                instance: self.instance.clone(),
-                data: Some(data),
-            }
-        } else {
-            let mut data = self.data.clone().unwrap();
-            let value: Data = Data { data_type: DataType::INTEGER, data: DataUnion { integer: int.unwrap() } };
-            data.insert(name, value);
-            Self {
-                name: self.name.clone(),
-                instance: self.instance.clone(),
-                data: Some(data),
-            }
-        }
+        self.with(name, int.into(), DataType::INTEGER)
     }
 
     pub fn with_float(&self, name: String, float: Option<f64>) -> Self {
-        if self.data.is_none() {
-            let value: Data = Data { data_type: DataType::FLOAT, data: DataUnion { float: float.unwrap_or(0.0) } };
-            let mut data: HashMap<String, Data> = HashMap::new();
-            data.insert(name, value);
-            Self {
-                name: self.name.clone(),
-                instance: self.instance.clone(),
-                data: Some(data),
-            }
-        } else {
-            let mut data = self.data.clone().unwrap();
-            let value: Data = Data { data_type: DataType::FLOAT, data: DataUnion { float: float.unwrap() } };
-            data.insert(name, value);
-            Self {
-                name: self.name.clone(),
-                instance: self.instance.clone(),
-                data: Some(data),
-            }
-        }
+        self.with(name, float.into(), DataType::FLOAT)
     }
 }
