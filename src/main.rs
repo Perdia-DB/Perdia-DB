@@ -19,8 +19,8 @@ fn main() {
 
     let start = std::time::Instant::now();
     let parsed_data = parser::parse(&source);
-    query::data(parsed_data).unwrap();
     println!("Took: {:?}", start.elapsed());
+    query::data(parsed_data).unwrap();
     let temp = TEMPLATES.lock().unwrap();
     std::fs::write("./template.json", serde_json::to_string_pretty(&*temp).unwrap()).unwrap();
 }

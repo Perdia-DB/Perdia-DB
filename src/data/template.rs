@@ -1,4 +1,5 @@
 use std::{collections::HashMap};
+use linked_hash_map::LinkedHashMap;
 use serde::{Serialize, Deserialize, de::Visitor};
 
 use super::serialization::{Data, DataType, DataUnion};
@@ -7,7 +8,7 @@ use super::serialization::{Data, DataType, DataUnion};
 pub struct Template {
     pub name: Option<String>,
     pub instance: Option<String>,
-    pub data: HashMap<String, Data>
+    pub data: LinkedHashMap<String, Data>
 }
 
 impl Template {
@@ -31,7 +32,7 @@ impl Template {
 pub struct TemplateBuilder {
     name: Option<String>,
     instance: Option<String>,
-    data: Option<HashMap<String, Data>>
+    data: Option<LinkedHashMap<String, Data>>
 }
 
 impl TemplateBuilder {
@@ -56,7 +57,7 @@ impl TemplateBuilder {
 
     fn with(&self, name: String, data: DataUnion, data_type: DataType) -> Self {
         let value = Data { data_type, data };
-        let mut data: HashMap<String, Data> = HashMap::new();
+        let mut data = self.data.clone().unwrap_or_default();
         data.insert(name, value);
         Self {
             name: self.name.clone(),

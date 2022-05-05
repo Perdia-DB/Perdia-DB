@@ -3,11 +3,11 @@
     "name": "DAY",
     "instance": null,
     "data": {
-      "Third": "Nothing",
+      "First": "Nothing",
       "Second": "Nothing",
-      "Seconds": 0.0,
+      "Third": "Nothing",
       "Day": 1,
-      "First": "Nothing"
+      "Seconds": 0.0
     }
   }
 ]

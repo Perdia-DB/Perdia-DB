@@ -27,8 +27,9 @@ pub fn parse(source: &String) -> Vec<Vec<TokenMatch>> {
         for tm in *tms {
             let tm = match tm.token {
                 Token::Literal => {
-                    let mut value = tm.value.to_string();
-                    value = value.strip_prefix("\"").unwrap().to_string().strip_suffix("\"").unwrap().to_string();
+                    let value = tm.value.to_string()
+                        .strip_prefix("\"").unwrap().to_string()
+                        .strip_suffix("\"").unwrap().to_string();
                     let mut ctm = tm.clone();
                     ctm.value = value;
                     ctm

@@ -1,45 +1,10 @@
 use std::fmt::Display;
 
 use crate::data::{template::Template, TEMPLATES};
-
+use request::RequestError;
 use super::parser::lexer::{Token, TokenMatch};
 
-mod response;
-
-/// Gets thrown if the source is invalid or the parser has trouble doing it's job.
-pub struct PangQueryError;
-
-impl std::fmt::Display for PangQueryError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error occurred while parseing query!")
-    }
-}
-
-impl std::fmt::Debug for PangQueryError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{ file: {}, line: {} }}", file!(), line!())
-    }
-}
-
-/// Gets thrown if the source has an invalid template or instance declaration.
-#[derive(Debug)]
-pub struct PangDeclarationError;
-
-impl std::fmt::Display for PangDeclarationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl std::error::Error for PangDeclarationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
-    }
-}
+mod request;
 
 #[derive(Copy, Clone, PartialEq)]
 enum Block {
@@ -47,7 +12,7 @@ enum Block {
     Statement
 }
 
-pub fn declare(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationError>{
+pub fn declare(lines: Vec<Vec<TokenMatch>>) -> Result<(), RequestError>{
     let mut endings = lines.iter().enumerate()
         .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
         .map(|(index, _)| index)
@@ -67,7 +32,7 @@ pub fn declare(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationError>{
     for mut block in blocks {
         let first = block.remove(0);
         // Validate statement begin
-        if first.len() != 2 { return Err(PangDeclarationError); }
+        if first.len() != 2 { return Err(RequestError::DeclarationError); }
         // Get name of template
         let name = first.get(1).unwrap();
         let mut template = Template::new(name.value.clone());
@@ -82,23 +47,22 @@ pub fn declare(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationError>{
                     Token::StringType => template.with_string(field.value.clone(), Some("".to_owned())),
                     Token::IntegerType => template.with_integer(field.value.clone(), Some(0)),
                     Token::FloatType => template.with_float(field.value.clone(), Some(0.0)),
-                    _ => { return Err(PangDeclarationError); }
+                    _ => { return Err(RequestError::DeclarationError); }
                 }
             // if it has 6 tokens it has a starting value
             } else if line.len() == 6 {
                 let field = line.get(1).unwrap();
                 let data_type = line.get(3).unwrap();
                 let starting = line.get(5).unwrap();
-                println!("{:?} has type {:?} starting {:?}", field.value, data_type.token, starting.value);
                 template = match data_type.token {
                     Token::StringType => template.with_string(field.value.clone(), Some(starting.value.clone())),
                     Token::IntegerType => template.with_integer(field.value.clone(), Some(starting.value.clone().parse::<i64>().unwrap())),
                     Token::FloatType => template.with_float(field.value.clone(), Some(starting.value.clone().parse::<f64>().unwrap())),
-                    _ => { return Err(PangDeclarationError); }
+                    _ => { return Err(RequestError::DeclarationError); }
                 }
             // throw an error at any other size
             } else {
-                return Err(PangDeclarationError)
+                return Err(RequestError::DeclarationError)
             }
         }
         // Push the template onto the static mutex
@@ -111,7 +75,7 @@ pub fn declare(lines: Vec<Vec<TokenMatch>>) -> Result<(), PangDeclarationError>{
 }
 
 /// Query the parsed data from memory
-pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, PangQueryError> {
+pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, RequestError> {
     
     // Mark diffrent blocks
     let mut blocks: Vec<Block> = Vec::new();
