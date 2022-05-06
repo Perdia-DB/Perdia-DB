@@ -1,8 +1,8 @@
 
 #[derive(Debug)]
 pub enum RequestError {
-    TemplateNonExistant,
-    InstanceNonExistant,
+    TemplateNonExistent,
+    InstanceNonExistent,
     DeclarationError,
     InvalidField,
     InvalidType,
