@@ -7,6 +7,7 @@ use regex::Regex;
 /// It has 15 Tokens
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Token {
+    Then,
     Type,
     Name,
     End,

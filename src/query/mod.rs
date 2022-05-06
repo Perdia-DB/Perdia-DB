@@ -1,27 +1,19 @@
-use std::fmt::Display;
-
 use crate::data::{template::Template, TEMPLATES, INSTANCES};
 use error::RequestError;
 use crate::lexer::data::{Token, TokenMatch};
 
 mod error;
 
-#[derive(Copy, Clone, PartialEq)]
-enum Block {
-    Declaration,
-    Statement
-}
-
-pub fn create_template(lines: Vec<Vec<TokenMatch>>) -> Result<Template, RequestError> {
+pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, RequestError> {
     let first = lines.remove(0);
+    lines.remove(lines.len()-1);
     // Validate statement begin
-    if first.len() != 2 { return Err(RequestError::DeclarationError); }
+    if first.len() != 2 { return Err(RequestError::SyntaxError); }
     // Get name of template
     let name = first.get(1).unwrap();
     let mut template = Template::new(name.value.clone());
     // Loop over field declaration lines
     for line in lines {
-        
         // if the line only has 4 tokens then it has no starting value
         if line.len() == 4 {
             let field = line.get(1).unwrap();
@@ -36,7 +28,7 @@ pub fn create_template(lines: Vec<Vec<TokenMatch>>) -> Result<Template, RequestE
                 Token::FloatType => {
                     template.with_float(field.value.clone(), Some(0.0))
                 },
-                _ => { return Err(RequestError::DeclarationError); }
+                _ => { return Err(RequestError::SyntaxError); }
             }
         // if it has 6 tokens it has a starting value
         } else if line.len() == 6 {
@@ -53,22 +45,31 @@ pub fn create_template(lines: Vec<Vec<TokenMatch>>) -> Result<Template, RequestE
                 Token::FloatType => {
                     template.with_float(field.value.clone(), Some(starting.value.clone().parse::<f64>().unwrap()))
                 },
-                _ => { return Err(RequestError::DeclarationError); }
+                _ => { return Err(RequestError::SyntaxError); }
             }
         // throw an error at any other size
         } else {
-            return Err(RequestError::DeclarationError)
+            return Err(RequestError::SyntaxError)
         }
     }
     // Push the template onto the static mutex
     let template = template.build();
     let mut mutex = TEMPLATES.lock().unwrap();
+    if mutex.contains(&template) {
+        return Err(RequestError::InstanceAlreadyExists);
+    }
     mutex.push(template.clone());
 
     Ok(template)
 }
 
-pub fn parse_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
+pub fn multiline_query(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
+    todo!()
+}
+
+// Should be reworked to feature an ast with dynamic execution.
+// For now this very riged model works fine.
+pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     for (index, line) in lines.clone().iter().enumerate() {
         let mut iter = line.iter();
@@ -107,7 +108,33 @@ pub fn parse_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>
                     },
                     None => return Err(RequestError::SyntaxError),
                 },
-                Token::Query => todo!(),
+                Token::Query => {
+                    match iter.next() {
+                        Some(next) => {
+                            match next.token {
+                                Token::Type => {
+
+                                },
+                                Token::Literal => {
+                                    let mut mutex = INSTANCES.lock().unwrap();
+                                    let instance = mutex.iter()
+                                        .filter(|template| template.instance == Some(next.value.clone()))
+                                        .collect::<Vec<&Template>>().get(0).unwrap();
+                                    match iter.next() {
+                                        Some(next) => match next.token {
+                                            Token::Get => {}
+                                            Token::Then => {}
+                                            _ => return Err(RequestError::SyntaxError)
+                                        },
+                                        None => return Err(RequestError::SyntaxError),
+                                    }
+                                },
+                                _ => return Err(RequestError::SyntaxError)
+                            }
+                        },
+                        None => return Err(RequestError::SyntaxError),
+                    }
+                },
                 // Pull out whole template
                 Token::Type => {
                     let start_index = index;
@@ -132,9 +159,8 @@ pub fn parse_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>
 
 /// Query the parsed data from memory
 pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, RequestError> {
-    
-    parse_statements(lines).unwrap();
-
-
-    Ok("".to_owned())
+    match serde_json::to_string_pretty(&execute_statements(lines)?) {
+        Ok(value) => Ok(value),
+        Err(_) => Err(RequestError::SerializationError),
+    }
 }

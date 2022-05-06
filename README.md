@@ -30,7 +30,7 @@ No nesting of structures is supported, but may be implemented in the future.
 
 Declaration of templates should only occur in their own request. Although everything works fine when it is not.
 ```
-TYPE "DAY";
+TYPE "DAY" WITH;
 NAME "First" TYPE STRING STARTING "Nothing";
 NAME "Second" TYPE STRING STARTING "Nothing";
 NAME "Third" TYPE STRING STARTING "Nothing";
@@ -64,16 +64,17 @@ CREATE "Monday" TYPE "DAY";
 
 Query object by name.
 ```
-QUERY "Monday" PUT "First" VALUE "Science";
-QUERY "Monday" PUT "Second" VALUE "CS";
-QUERY "Monday" GET "First";
-QUERY "Monday" GET "First" "Second";
+QUERY "Monday" THEN; 
+PUT "First" VALUE "Science";
+PUT "Second" VALUE "CS";
+GET "First" "Second";
+END;
 ```
 
 Query objects by type
 ```
-QUERY TYPE GET "DAY" GET "First";
-QUERY TYPE GET "DAY" GET "First" "Seconds";
+QUERY TYPE "DAY" GET "First";
+QUERY TYPE "DAY" GET "First" "Seconds";
 ```
 
 Query all types

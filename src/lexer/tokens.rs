@@ -5,6 +5,7 @@ pub fn initialize() -> Vec<TokenDefinition> {
     let mut token_definitions = Vec::<TokenDefinition>::with_capacity(13);
 
     token_definitions.push(TokenDefinition::new(Token::Query, r"QUERY", 1));
+    token_definitions.push(TokenDefinition::new(Token::Query, r"THEN", 1));
     token_definitions.push(TokenDefinition::new(Token::Create, r"CREATE", 1));
     token_definitions.push(TokenDefinition::new(Token::End, r"END", 1));
     token_definitions.push(TokenDefinition::new(Token::Type, r"TYPE", 1));

@@ -31,7 +31,7 @@ impl From<Option<f64>> for DataUnion {
 }
 
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum DataType {
     STRING,
     INTEGER,
@@ -41,6 +41,16 @@ pub enum DataType {
 pub struct Data {
     pub data_type: DataType,
     pub data: DataUnion,
+}
+
+impl PartialEq for Data {
+    fn eq(&self, other: &Self) -> bool {
+        self.data_type == other.data_type && match self.data_type {
+            DataType::STRING => unsafe {self.data.string == other.data.string},
+            DataType::INTEGER => unsafe {self.data.integer == other.data.integer},
+            DataType::FLOAT => unsafe {self.data.float == other.data.float},
+        }
+    }
 }
 
 impl Clone for Data {
