@@ -18,12 +18,14 @@ fn main() {
     NAME "Seconds" TYPE FLOAT;
     END;
     CREATE "Monday" TYPE "DAY";
+    CREATE "Tuesday" TYPE "DAY";
+    CREATE "Wednesday" TYPE "DAY";
     "#.to_string();
 
     let start = std::time::Instant::now();
     let parsed_data = lexer::parse(&source);
-    println!("Took: {:?}", start.elapsed());
     query::data(parsed_data).unwrap();
+    println!("Took: {:?}", start.elapsed());
     let temp = TEMPLATES.lock().unwrap();
     let inst = INSTANCES.lock().unwrap();
     std::fs::write("./template.json", serde_json::to_string_pretty(&*temp).unwrap()).unwrap();
