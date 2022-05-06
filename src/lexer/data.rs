@@ -2,9 +2,9 @@ use std::ops::Range;
 
 use regex::Regex;
 
-/// The diffrent Keywords used in PANG
+/// The different Keywords used in PANG
 /// 
-/// It has 13 Tokens
+/// It has 15 Tokens
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Token {
     Type,

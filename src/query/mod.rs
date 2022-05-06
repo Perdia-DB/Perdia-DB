@@ -141,7 +141,7 @@ pub fn parse_statements(lines: Vec<Vec<TokenMatch>>) -> Result<(), RequestError>
 /// Query the parsed data from memory
 pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, RequestError> {
     
-    // Mark diffrent blocks
+    // Mark different blocks
     let mut blocks: Vec<Block> = Vec::new();
     for line in &lines {
         blocks.push(match line.get(0).unwrap().token {
