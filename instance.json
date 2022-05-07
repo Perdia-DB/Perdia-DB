@@ -1,6 +1,6 @@
 [
   {
-    "name": "DAY",
+    "template": "DAY",
     "instance": "Monday",
     "data": {
       "First": "Nothing",
@@ -11,25 +11,25 @@
     }
   },
   {
-    "name": "DAY",
+    "template": "DAY",
     "instance": "Tuesday",
     "data": {
       "First": "Nothing",
       "Second": "Nothing",
       "Third": "Nothing",
-      "Day": 1,
-      "Seconds": 0.0
+      "Seconds": 0.0,
+      "Day": 2
     }
   },
   {
-    "name": "DAY",
+    "template": "DAY",
     "instance": "Wednesday",
     "data": {
       "First": "Nothing",
       "Second": "Nothing",
       "Third": "Nothing",
-      "Day": 1,
-      "Seconds": 0.0
+      "Seconds": 0.0,
+      "Day": 3
     }
   }
 ]

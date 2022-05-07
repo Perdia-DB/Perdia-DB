@@ -1,5 +1,6 @@
-use crate::data::{template::Template, TEMPLATES, INSTANCES};
+use crate::data::{template::Template, TEMPLATES, INSTANCES, serialization::Data};
 use error::RequestError;
+use linked_hash_map::LinkedHashMap;
 use crate::lexer::data::{Token, TokenMatch};
 
 mod error;
@@ -52,15 +53,7 @@ pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, Requ
             return Err(RequestError::SyntaxError)
         }
     }
-    // Push the template onto the static mutex
-    let template = template.build();
-    let mut mutex = TEMPLATES.lock().unwrap();
-    if mutex.contains(&template) {
-        return Err(RequestError::InstanceAlreadyExists);
-    }
-    mutex.push(template.clone());
-
-    Ok(template)
+    Ok(template.build())
 }
 
 pub fn multiline_query(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
@@ -91,7 +84,7 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                             let mut instance = mutex.iter()
                                                 .filter(
                                                     |template| 
-                                                    template.name.as_ref().unwrap().clone() == template_name
+                                                    template.template.as_ref().unwrap().clone() == template_name
                                                 ).collect::<Vec<&Template>>().get(0).unwrap().clone().clone();
                                             instance.instance = Some(name);
                                             let mut mutex = INSTANCES.lock().unwrap();
@@ -111,19 +104,82 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                 Token::Query => {
                     match iter.next() {
                         Some(next) => {
+                            println!("{:?}", next.token);
                             match next.token {
                                 Token::Type => {
-
+                                    let mutex = TEMPLATES.lock().unwrap();
+                                    output.extend(mutex.clone())
                                 },
                                 Token::Literal => {
                                     let mut mutex = INSTANCES.lock().unwrap();
-                                    let instance = mutex.iter()
-                                        .filter(|template| template.instance == Some(next.value.clone()))
-                                        .collect::<Vec<&Template>>().get(0).unwrap();
+                                    let index = *mutex.iter().enumerate()
+                                        .filter(|(_, template)| template.instance == Some(next.value.clone()))
+                                        .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap();
+                                    let mut instance = mutex.remove(index);
                                     match iter.next() {
                                         Some(next) => match next.token {
-                                            Token::Get => {}
-                                            Token::Then => {}
+                                            Token::Get => {
+                                                let data = instance.data.clone();
+                                                instance.data = LinkedHashMap::new();
+                                                loop {
+                                                    match iter.next() {
+                                                        Some(next) => match next.token {
+                                                            Token::Literal => {
+                                                                let field = next.value.clone();
+                                                                let data = data.get(&field).unwrap().clone();
+                                                                let mut map: LinkedHashMap<String, Data> = LinkedHashMap::new();
+                                                                map.insert(field, data);
+                                                                instance.data.extend(map);
+                                                            }
+                                                            _ => return Err(RequestError::SyntaxError)
+                                                        },
+                                                        None => break,
+                                                    }
+                                                }
+                                                output.push(instance.clone());
+                                                mutex.push(instance);
+                                            }
+                                            Token::Set => {
+                                                match iter.next() {
+                                                    Some(next) => match next.token {
+                                                        Token::Literal => {
+                                                            let key = next.value.clone();
+                                                            match iter.next() {
+                                                                Some(next) => match next.token {
+                                                                    Token::Value => match iter.next() {
+                                                                        Some(next) => match next.token {
+                                                                            Token::Literal => {
+                                                                                let value = next.value.clone();
+                                                                                instance.data.insert(key, Data::from(value));
+                                                                                mutex.push(instance)
+                                                                            },
+                                                                            Token::Integer => {
+                                                                                let value = next.value.clone().parse::<i64>().unwrap();
+                                                                                instance.data.insert(key, Data::from(value));
+                                                                                mutex.push(instance)
+                                                                            },
+                                                                            Token::Float => {
+                                                                                let value = next.value.clone().parse::<f64>().unwrap();
+                                                                                instance.data.insert(key, Data::from(value));
+                                                                                mutex.push(instance)
+                                                                            },
+                                                                            _ => return Err(RequestError::SyntaxError)
+                                                                        },
+                                                                        None => return Err(RequestError::SyntaxError),
+                                                                    }
+                                                                    _ => return Err(RequestError::SyntaxError)
+                                                                },
+                                                                None => return Err(RequestError::SyntaxError),
+                                                            }
+                                                        }
+                                                        _ => return Err(RequestError::SyntaxError)
+                                                    },
+                                                    None => return Err(RequestError::SyntaxError),
+                                                }
+                                            }
+                                            Token::Then => {
+
+                                            }
                                             _ => return Err(RequestError::SyntaxError)
                                         },
                                         None => return Err(RequestError::SyntaxError),
@@ -143,11 +199,17 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                         .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap();
                     let template: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
                     let template = create_template(template)?;
-                    output.push(template);
+                    let mut mutex = TEMPLATES.lock().unwrap();
+                    if mutex.contains(&template) {
+                        return Err(RequestError::InstanceAlreadyExists);
+                    }
+                    mutex.push(template.clone());
                 },
                 // Ignore declaration Tokens
                 Token::Name => {},
-                Token::End => {}
+                Token::End => {},
+                // Ignore multiline query set
+                Token::Set => {}
                 _ => return Err(RequestError::SyntaxError)
             },
             None => return Err(RequestError::SyntaxError),

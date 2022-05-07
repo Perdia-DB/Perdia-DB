@@ -64,6 +64,42 @@ impl Clone for Data {
     }
 }
 
+impl From<&'static str> for Data {
+    fn from(string: &'static str) -> Self {
+        Self {
+            data_type: DataType::STRING,
+            data: DataUnion::from(Some(string))
+        }
+    }
+}
+
+impl From<String> for Data {
+    fn from(string: String) -> Self {
+        Self {
+            data_type: DataType::STRING,
+            data: DataUnion::from(Some(string))
+        }
+    }
+}
+
+impl From<i64> for Data {
+    fn from(int: i64) -> Self {
+        Self {
+            data_type: DataType::INTEGER,
+            data: DataUnion::from(Some(int))
+        }
+    }
+}
+
+impl From<f64> for Data {
+    fn from(float: f64) -> Self {
+        Self {
+            data_type: DataType::FLOAT,
+            data: DataUnion::from(Some(float))
+        }
+    }
+}
+
 pub struct DATAVisitor;
 
 impl Serialize for Data {

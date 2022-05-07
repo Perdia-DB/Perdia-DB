@@ -17,15 +17,21 @@ fn main() {
     NAME "Day" TYPE INTEGER STARTING 1;
     NAME "Seconds" TYPE FLOAT;
     END;
+
     CREATE "Monday" TYPE "DAY";
     CREATE "Tuesday" TYPE "DAY";
     CREATE "Wednesday" TYPE "DAY";
+
+    QUERY "Tuesday" SET "Day" VALUE 2;
+    QUERY "Wednesday" SET "Day" VALUE 3;
+    QUERY TYPE;
     "#.to_string();
 
-    let start = std::time::Instant::now();
     let parsed_data = lexer::parse(&source);
-    query::data(parsed_data).unwrap();
+    let start = std::time::Instant::now();
+    let data = query::data(parsed_data).unwrap();
     println!("Took: {:?}", start.elapsed());
+    println!("{}", data);
     let temp = TEMPLATES.lock().unwrap();
     let inst = INSTANCES.lock().unwrap();
     std::fs::write("./template.json", serde_json::to_string_pretty(&*temp).unwrap()).unwrap();

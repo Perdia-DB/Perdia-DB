@@ -7,13 +7,16 @@ use regex::Regex;
 /// It has 15 Tokens
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Token {
+    Remove,
+    Delete,
     Then,
+    Value,
     Type,
     Name,
     End,
     Create,
     Query,
-    Put,
+    Set,
     Get,
     StringType,
     IntegerType,

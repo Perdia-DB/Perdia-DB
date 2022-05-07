@@ -6,7 +6,8 @@ use super::serialization::{Data, DataType, DataUnion};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct Template {
-    pub name: Option<String>,
+    pub template: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub instance: Option<String>,
     pub data: LinkedHashMap<String, Data>
 }
@@ -14,7 +15,7 @@ pub struct Template {
 impl Template {
     pub fn new(name: String) -> TemplateBuilder {
         TemplateBuilder {
-            name: Some(name),
+            template: Some(name),
             instance: None,
             data: None,
         }
@@ -22,7 +23,7 @@ impl Template {
 
     pub fn instance(instance: String) -> TemplateBuilder {
         TemplateBuilder {
-            name: None,
+            template: None,
             instance: Some(instance),
             data: None,
         }
@@ -30,7 +31,7 @@ impl Template {
 }
 
 pub struct TemplateBuilder {
-    name: Option<String>,
+    template: Option<String>,
     instance: Option<String>,
     data: Option<LinkedHashMap<String, Data>>
 }
@@ -41,7 +42,7 @@ impl TemplateBuilder {
         let data = self.data.unwrap_or_default();
     
         Template {
-            name: self.name,
+            template: self.template,
             instance: None,
             data,
         }
@@ -49,7 +50,7 @@ impl TemplateBuilder {
 
     pub fn with_name(&self, name: String) -> Self {
         Self {
-            name: self.name.clone(),
+            template: self.template.clone(),
             instance: Some(name),
             data: self.data.clone()
         }
@@ -60,7 +61,7 @@ impl TemplateBuilder {
         let mut data = self.data.clone().unwrap_or_default();
         data.insert(name, value);
         Self {
-            name: self.name.clone(),
+            template: self.template.clone(),
             instance: self.instance.clone(),
             data: Some(data),
         }
