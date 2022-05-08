@@ -17,6 +17,7 @@ fn main() {
     NAME "Day" TYPE INTEGER STARTING 1;
     NAME "Seconds" TYPE FLOAT;
     END;
+
     QUERY TYPE;
     
     CREATE "Monday" TYPE "DAY";
@@ -25,6 +26,14 @@ fn main() {
 
     QUERY "Tuesday" SET "Day" VALUE 2;
     QUERY "Wednesday" SET "Day" VALUE 3;
+
+    QUERY "Monday";
+
+    QUERY "Monday" THEN;
+    SET "First" VALUE "Math";
+    SET "Second" VALUE "English";
+    SET "Third" VALUE "Science";
+    END;
 
     QUERY "Monday";
     "#.to_string();

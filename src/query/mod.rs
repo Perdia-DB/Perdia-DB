@@ -56,8 +56,45 @@ pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, Requ
     Ok(template.build())
 }
 
-pub fn multiline_query(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
-    todo!()
+pub fn multiline_query(mut instance: Template, mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
+    let mut output: Vec<Template> = Vec::new();
+    let mut instance = Box::new(instance);
+    for line in lines {
+        let mut iter = line.iter();
+        match iter.next() {
+            Some(next) => match next.token {
+                Token::Get => match iter.next() {
+                    Some(next) => { 
+                        let data = instance.data.clone();
+                        instance.data = LinkedHashMap::new();
+                        loop {
+                            match iter.next() {
+                                Some(next) => match next.token {
+                                    Token::Literal => {
+                                        let field = next.value.clone();
+                                        let data = data.get(&field).unwrap().clone();
+                                        let mut map: LinkedHashMap<String, Data> = LinkedHashMap::new();
+                                        map.insert(field, data);
+                                        instance.data.extend(map);
+                                    }
+                                    _ => return Err(RequestError::SyntaxError)
+                                },
+                                None => break,
+                            }
+                        }
+                        output.push(*instance.clone());
+                    },
+                    None => return Err(RequestError::SyntaxError),
+                }
+                Token::Set => {
+
+                }
+                _ => return Err(RequestError::SyntaxError)
+            },
+            None => return Err(RequestError::SyntaxError),
+        }
+    }
+    Ok(output)
 }
 
 // Should be reworked to feature an ast with dynamic execution.
@@ -177,7 +214,13 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                 }
                                             }
                                             Token::Then => {
-
+                                                let start_index = index;
+                                                let end_index = *lines.iter().enumerate()
+                                                    .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
+                                                    .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap();
+                                                let lines: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
+                                                let result = multiline_query(instance, lines)?;
+                                                output.extend(result);
                                             }
                                             _ => return Err(RequestError::SyntaxError)
                                         },
@@ -212,6 +255,7 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                 Token::End => {},
                 // Ignore multiline query set
                 Token::Set => {}
+                Token::Get => {}
                 _ => return Err(RequestError::SyntaxError)
             },
             None => return Err(RequestError::SyntaxError),

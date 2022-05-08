@@ -45,7 +45,7 @@ CREATE "Monday" TYPE "DAY";
 
 ### Query Objects
 
-Set multiple fields.
+Set/Get multiple fields.
 ```
 QUERY "Monday" THEN; 
 SET "First" VALUE "Science";
