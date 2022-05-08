@@ -59,27 +59,32 @@ pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, Requ
 pub fn multiline_query(mut instance: Template, mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     let mut instance = Box::new(instance);
+    println!("{:?}", lines);
     for line in lines {
+        //println!("{:?}", line);
         let mut iter = line.iter();
         match iter.next() {
             Some(next) => match next.token {
                 Token::Get => match iter.next() {
                     Some(next) => { 
-                        let data = instance.data.clone();
+                        let instance_data = instance.data.clone();
                         instance.data = LinkedHashMap::new();
+                        let field = next.value.clone();
+                        let data = instance_data.get(&field).unwrap().clone();
+                        let mut map: LinkedHashMap<String, Data> = LinkedHashMap::new();
+                        map.insert(field, data);
                         loop {
                             match iter.next() {
                                 Some(next) => match next.token {
                                     Token::Literal => {
                                         let field = next.value.clone();
-                                        let data = data.get(&field).unwrap().clone();
-                                        let mut map: LinkedHashMap<String, Data> = LinkedHashMap::new();
+                                        let data = instance_data.get(&field).unwrap().clone();
                                         map.insert(field, data);
-                                        instance.data.extend(map);
+                                        instance.data.extend(map.clone());
                                     }
                                     _ => return Err(RequestError::SyntaxError)
                                 },
-                                None => break,
+                                None => { println!("asdasd"); break},
                             }
                         }
                         output.push(*instance.clone());
@@ -87,7 +92,7 @@ pub fn multiline_query(mut instance: Template, mut lines: Vec<Vec<TokenMatch>>) 
                     None => return Err(RequestError::SyntaxError),
                 }
                 Token::Set => {
-
+                    println!("Set");
                 }
                 _ => return Err(RequestError::SyntaxError)
             },
@@ -150,10 +155,11 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                     let mut mutex = INSTANCES.lock().unwrap();
                                     let index = *mutex.iter().enumerate()
                                         .filter(|(_, template)| template.instance == Some(next.value.clone()))
-                                        .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap();
+                                        .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap(); // TODO: Throw error
                                     let mut instance = mutex.remove(index);
                                     match iter.next() {
                                         Some(next) => match next.token {
+                                            
                                             Token::Get => {
                                                 let data = instance.data.clone();
                                                 instance.data = LinkedHashMap::new();
@@ -214,13 +220,15 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                 }
                                             }
                                             Token::Then => {
-                                                let start_index = index;
+                                                let start_index = index+2;
                                                 let end_index = *lines.iter().enumerate()
                                                     .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
-                                                    .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap();
+                                                    .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap()-1;
                                                 let lines: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
                                                 let result = multiline_query(instance, lines)?;
-                                                output.extend(result);
+                                                output.extend(result.clone());
+                                                println!("{:?}", result.len());
+                                                mutex.extend(result);
                                             }
                                             _ => return Err(RequestError::SyntaxError)
                                         },

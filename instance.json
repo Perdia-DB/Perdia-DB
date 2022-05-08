@@ -1,35 +1,7 @@
 [
   {
     "template": "DAY",
-    "instance": "Tuesday",
-    "data": {
-      "First": "Nothing",
-      "Second": "Nothing",
-      "Third": "Nothing",
-      "Seconds": 0.0,
-      "Day": 2
-    }
-  },
-  {
-    "template": "DAY",
-    "instance": "Wednesday",
-    "data": {
-      "First": "Nothing",
-      "Second": "Nothing",
-      "Third": "Nothing",
-      "Seconds": 0.0,
-      "Day": 3
-    }
-  },
-  {
-    "template": "DAY",
     "instance": "Monday",
-    "data": {
-      "First": "Nothing",
-      "Second": "Nothing",
-      "Third": "Nothing",
-      "Day": 1,
-      "Seconds": 0.0
-    }
+    "data": {}
   }
 ]

@@ -17,22 +17,11 @@ fn main() {
     NAME "Day" TYPE INTEGER STARTING 1;
     NAME "Seconds" TYPE FLOAT;
     END;
-
-    QUERY TYPE;
     
     CREATE "Monday" TYPE "DAY";
-    CREATE "Tuesday" TYPE "DAY";
-    CREATE "Wednesday" TYPE "DAY";
-
-    QUERY "Tuesday" SET "Day" VALUE 2;
-    QUERY "Wednesday" SET "Day" VALUE 3;
-
-    QUERY "Monday";
 
     QUERY "Monday" THEN;
-    SET "First" VALUE "Math";
-    SET "Second" VALUE "English";
-    SET "Third" VALUE "Science";
+    GET "First";
     END;
 
     QUERY "Monday";
