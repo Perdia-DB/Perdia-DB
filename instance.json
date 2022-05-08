@@ -1,17 +1,6 @@
 [
   {
     "template": "DAY",
-    "instance": "Monday",
-    "data": {
-      "First": "Nothing",
-      "Second": "Nothing",
-      "Third": "Nothing",
-      "Day": 1,
-      "Seconds": 0.0
-    }
-  },
-  {
-    "template": "DAY",
     "instance": "Tuesday",
     "data": {
       "First": "Nothing",
@@ -30,6 +19,17 @@
       "Third": "Nothing",
       "Seconds": 0.0,
       "Day": 3
+    }
+  },
+  {
+    "template": "DAY",
+    "instance": "Monday",
+    "data": {
+      "First": "Nothing",
+      "Second": "Nothing",
+      "Third": "Nothing",
+      "Day": 1,
+      "Seconds": 0.0
     }
   }
 ]

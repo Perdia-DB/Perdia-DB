@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::ops::{Range, Sub};
 
 use regex::Regex;
 
@@ -89,10 +89,8 @@ impl TokenDefinition {
     }
 
     /// Returns true if first [`Range`] is overlapping second [`Range`]
-    fn range_overlap<T>(first: Range<T>, second: Range<T>) -> bool 
-        where T: PartialEq + PartialOrd 
-    {
+    fn range_overlap(first: Range<usize>, second: Range<usize>) -> bool {
         (first.start >= second.start && first.start <= second.end) ||
-        (first.end >= second.start && first.end <= second.end)
+        (first.end-1 >= second.start && first.end-1 <= second.end)
     }
 }

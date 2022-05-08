@@ -17,14 +17,16 @@ fn main() {
     NAME "Day" TYPE INTEGER STARTING 1;
     NAME "Seconds" TYPE FLOAT;
     END;
-
+    QUERY TYPE;
+    
     CREATE "Monday" TYPE "DAY";
     CREATE "Tuesday" TYPE "DAY";
     CREATE "Wednesday" TYPE "DAY";
 
     QUERY "Tuesday" SET "Day" VALUE 2;
     QUERY "Wednesday" SET "Day" VALUE 3;
-    QUERY TYPE;
+
+    QUERY "Monday";
     "#.to_string();
 
     let parsed_data = lexer::parse(&source);

@@ -104,7 +104,6 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                 Token::Query => {
                     match iter.next() {
                         Some(next) => {
-                            println!("{:?}", next.token);
                             match next.token {
                                 Token::Type => {
                                     let mutex = TEMPLATES.lock().unwrap();
@@ -182,7 +181,10 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                             }
                                             _ => return Err(RequestError::SyntaxError)
                                         },
-                                        None => return Err(RequestError::SyntaxError),
+                                        None => {
+                                            output.push(instance.clone());
+                                            mutex.push(instance);
+                                        },
                                     }
                                 },
                                 _ => return Err(RequestError::SyntaxError)

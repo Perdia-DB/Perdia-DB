@@ -16,7 +16,7 @@ pub fn parse(source: &String) -> Vec<Vec<TokenMatch>> {
             definition.match_text(&source, &mut token_matches)
         );
     token_matches.sort_by(|a, b| a.start.cmp(&b.start));
-    
+
     let mut lines = Vec::new();
     token_matches.split(|m| m.token == Token::ENDL)
     .collect::<Vec<&[TokenMatch]>>().iter()
@@ -38,6 +38,10 @@ pub fn parse(source: &String) -> Vec<Vec<TokenMatch>> {
         }
         lines.push(line);
     });
-    lines.remove(lines.len()-1);
+    let last = lines.remove(lines.len()-1);
+    if last.len() == 0 {
+        return lines
+    }
+    lines.push(last);
     lines
 }
