@@ -73,7 +73,8 @@ pub fn multiline_query(mut instance: Template, mut lines: Vec<Vec<TokenMatch>>) 
                         let data = instance_data.get(&field).unwrap().clone();
                         let mut map: LinkedHashMap<String, Data> = LinkedHashMap::new();
                         map.insert(field, data);
-                        loop {
+                        instance.data.extend(map.clone());
+                        'inner: loop {
                             match iter.next() {
                                 Some(next) => match next.token {
                                     Token::Literal => {
@@ -84,7 +85,7 @@ pub fn multiline_query(mut instance: Template, mut lines: Vec<Vec<TokenMatch>>) 
                                     }
                                     _ => return Err(RequestError::SyntaxError)
                                 },
-                                None => { println!("asdasd"); break},
+                                None => break 'inner,
                             }
                         }
                         output.push(*instance.clone());
@@ -225,10 +226,10 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                     .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
                                                     .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap()-1;
                                                 let lines: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
-                                                let result = multiline_query(instance, lines)?;
+                                                let result = multiline_query(instance.clone(), lines)?;
                                                 output.extend(result.clone());
                                                 println!("{:?}", result.len());
-                                                mutex.extend(result);
+                                                mutex.push(instance);
                                             }
                                             _ => return Err(RequestError::SyntaxError)
                                         },

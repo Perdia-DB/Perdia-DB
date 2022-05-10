@@ -43,6 +43,18 @@ pub struct Data {
     pub data: DataUnion,
 }
 
+impl std::fmt::Debug for Data {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Data").field("value", {
+            match self.data_type {
+                DataType::STRING => unsafe { &self.data.string },
+                DataType::INTEGER => unsafe { &self.data.integer },
+                DataType::FLOAT => unsafe { &self.data.float },
+            }
+        }).finish()
+    }
+}
+
 impl PartialEq for Data {
     fn eq(&self, other: &Self) -> bool {
         self.data_type == other.data_type && match self.data_type {
