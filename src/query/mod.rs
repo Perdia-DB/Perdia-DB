@@ -1,3 +1,5 @@
+use std::sync::MutexGuard;
+
 use crate::data::{template::Template, TEMPLATES, INSTANCES, serialization::Data};
 use error::RequestError;
 use linked_hash_map::LinkedHashMap;
@@ -56,24 +58,24 @@ pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, Requ
     Ok(template.build())
 }
 
-pub fn multiline_query(mut instance: Template, mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
+pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &mut MutexGuard<Vec<Template>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     let mut instance = Box::new(instance);
     println!("{:?}", lines);
     for line in lines {
-        //println!("{:?}", line);
         let mut iter = line.iter();
         match iter.next() {
             Some(next) => match next.token {
                 Token::Get => match iter.next() {
-                    Some(next) => { 
-                        let instance_data = instance.data.clone();
-                        instance.data = LinkedHashMap::new();
+                    Some(next) => {
+                        let mut instance_clone = instance.clone(); 
+                        let instance_data = instance_clone.data.clone();
+                        instance_clone.data = LinkedHashMap::new();
                         let field = next.value.clone();
                         let data = instance_data.get(&field).unwrap().clone();
                         let mut map: LinkedHashMap<String, Data> = LinkedHashMap::new();
                         map.insert(field, data);
-                        instance.data.extend(map.clone());
+                        instance_clone.data.extend(map.clone());
                         'inner: loop {
                             match iter.next() {
                                 Some(next) => match next.token {
@@ -81,25 +83,59 @@ pub fn multiline_query(mut instance: Template, mut lines: Vec<Vec<TokenMatch>>) 
                                         let field = next.value.clone();
                                         let data = instance_data.get(&field).unwrap().clone();
                                         map.insert(field, data);
-                                        instance.data.extend(map.clone());
+                                        instance_clone.data.extend(map.clone());
                                     }
                                     _ => return Err(RequestError::SyntaxError)
                                 },
                                 None => break 'inner,
                             }
                         }
-                        output.push(*instance.clone());
+                        output.push(*instance_clone);
                     },
                     None => return Err(RequestError::SyntaxError),
                 }
                 Token::Set => {
-                    println!("Set");
+                    match iter.next() {
+                        Some(next) => match next.token {
+                            Token::Literal => {
+                                let key = next.value.clone();
+                                match iter.next() {
+                                    Some(next) => match next.token {
+                                        Token::Value => match iter.next() {
+                                            Some(next) => match next.token {
+                                                Token::Literal => {
+                                                    let value = next.value.clone();
+                                                    instance.data.insert(key, Data::from(value));
+                                                },
+                                                Token::Integer => {
+                                                    let value = next.value.clone().parse::<i64>().unwrap();
+                                                    instance.data.insert(key, Data::from(value));
+                                                },
+                                                Token::Float => {
+                                                    let value = next.value.clone().parse::<f64>().unwrap();
+                                                    instance.data.insert(key, Data::from(value));
+                                                },
+                                                _ => return Err(RequestError::SyntaxError)
+                                            },
+                                            None => return Err(RequestError::SyntaxError),
+                                        }
+                                        _ => return Err(RequestError::SyntaxError)
+                                    },
+                                    None => return Err(RequestError::SyntaxError),
+                                }
+                            }
+                            _ => return Err(RequestError::SyntaxError)
+                        },
+                        None => return Err(RequestError::SyntaxError),
+                    }
+
                 }
                 _ => return Err(RequestError::SyntaxError)
             },
             None => return Err(RequestError::SyntaxError),
         }
     }
+    mutex.push(*instance);
     Ok(output)
 }
 
@@ -226,9 +262,8 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                     .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
                                                     .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap()-1;
                                                 let lines: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
-                                                let result = multiline_query(instance.clone(), lines)?;
+                                                let result = multiline_query(instance.clone(), lines, &mut mutex)?;
                                                 output.extend(result.clone());
-                                                println!("{:?}", result.len());
                                                 mutex.push(instance);
                                             }
                                             _ => return Err(RequestError::SyntaxError)

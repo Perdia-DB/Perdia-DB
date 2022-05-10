@@ -9,5 +9,16 @@
       "Day": 1,
       "Seconds": 0.0
     }
+  },
+  {
+    "template": "DAY",
+    "instance": "Monday",
+    "data": {
+      "Third": "Nothing",
+      "Day": 1,
+      "Seconds": 0.0,
+      "First": "Science",
+      "Second": "CS"
+    }
   }
 ]

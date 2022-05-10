@@ -21,7 +21,9 @@ fn main() {
     CREATE "Monday" TYPE "DAY";
 
     QUERY "Monday" THEN;
-    GET "First";
+    SET "First" VALUE "Science";
+    SET "Second" VALUE "CS";
+    GET "First" "Second";
     END;
 
     QUERY "Monday";
