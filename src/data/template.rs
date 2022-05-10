@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize, de::Visitor};
 
 use super::serialization::{Data, DataType, DataUnion};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Template {
     pub template: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

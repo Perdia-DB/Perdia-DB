@@ -26,6 +26,8 @@ fn main() {
     GET "First" "Second";
     END;
 
+    DELETE "Monday";
+
     QUERY "Monday";
     "#.to_string();
 

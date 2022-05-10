@@ -61,7 +61,6 @@ pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, Requ
 pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &mut MutexGuard<Vec<Template>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     let mut instance = Box::new(instance);
-    println!("{:?}", lines);
     for line in lines {
         let mut iter = line.iter();
         match iter.next() {
@@ -264,7 +263,6 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                 let lines: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
                                                 let result = multiline_query(instance.clone(), lines, &mut mutex)?;
                                                 output.extend(result.clone());
-                                                mutex.push(instance);
                                             }
                                             _ => return Err(RequestError::SyntaxError)
                                         },
@@ -293,6 +291,40 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                         return Err(RequestError::InstanceAlreadyExists);
                     }
                     mutex.push(template.clone());
+                },
+                // Deletion
+                Token::Delete => match iter.next() {
+                    Some(next) => match next.token {
+                        Token::Literal => {
+                            let mut mutex = INSTANCES.lock().unwrap();
+                            let index = *mutex.iter().enumerate()
+                                .filter(|(_, template)| template.instance == Some(next.value.clone()))
+                                .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap(); // TODO: Throw error
+                            mutex.remove(index);
+                        },
+                        Token::Type => match iter.next() {
+                            Some(next) => match next.token {
+                                Token::Literal => {
+                                    let mut mutex = TEMPLATES.lock().unwrap();
+                                    let index = *mutex.iter().enumerate()
+                                        .filter(|(_, template)| template.template == Some(next.value.clone()))
+                                        .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap(); // TODO: Throw error
+                                    mutex.remove(index);
+                                    // Remove Instances
+                                    let mut mutex = INSTANCES.lock().unwrap();
+                                    for (index, instance) in mutex.clone().iter().enumerate() {
+                                        if instance.template.as_ref().unwrap_or(&"".to_owned()) == &next.value {
+                                            mutex.remove(index);
+                                        }
+                                    }
+                                },
+                                _ => return Err(RequestError::SyntaxError),
+                            },
+                            None => return Err(RequestError::SyntaxError),
+                        }
+                        _ => return Err(RequestError::SyntaxError), 
+                    },
+                    None => return Err(RequestError::SyntaxError),
                 },
                 // Ignore declaration Tokens
                 Token::Name => {},

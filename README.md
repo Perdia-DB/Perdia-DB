@@ -71,7 +71,7 @@ This will delete just the instance.
 DELETE "Monday"
 ```
 
-This will remove all instances with the type and the type itself.
+This will delete all instances with the type and the type itself.
 ```
-REMOVE "DAY"
+DELETE TYPE "DAY"
 ```
