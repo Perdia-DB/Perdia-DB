@@ -26,9 +26,8 @@ fn main() {
     GET "First" "Second";
     END;
 
-    DELETE "Monday";
-
     QUERY "Monday";
+    DELETE "Monday";
     "#.to_string();
 
     let parsed_data = lexer::parse(&source);
