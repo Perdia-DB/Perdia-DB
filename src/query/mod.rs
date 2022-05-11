@@ -5,7 +5,7 @@ use error::RequestError;
 use linked_hash_map::LinkedHashMap;
 use crate::lexer::data::{Token, TokenMatch};
 
-mod error;
+pub mod error;
 
 pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, RequestError> {
     let first = lines.remove(0);
