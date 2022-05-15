@@ -1,3 +1,5 @@
+use std::env;
+
 use data::{TEMPLATES, template::Template};
 use serde::Serialize;
 use serde_json::*;
@@ -14,6 +16,8 @@ static BUFFER_SIZE: usize = 1048576;
 
 #[tokio::main]
 async fn main() {
+
+    //env::set_var("RUST_BACKTRACE", "1");
 
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
 

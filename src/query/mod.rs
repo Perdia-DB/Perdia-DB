@@ -139,7 +139,7 @@ pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &
 }
 
 // Should be reworked to feature an ast with dynamic execution.
-// For now this very riged model works fine.
+// For now this very rigid model works fine.
 pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     for (index, line) in lines.clone().iter().enumerate() {
@@ -280,7 +280,8 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                 },
                 // Pull out whole template
                 Token::Type => {
-                    let start_index = index;
+                    //let start_index = index;
+                    let start_index = 0;
                     let end_index = *lines.iter().enumerate()
                         .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
                         .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap();
