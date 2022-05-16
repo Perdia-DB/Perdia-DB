@@ -167,6 +167,7 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                             instance.instance = Some(name);
                                             let mut mutex = INSTANCES.lock().unwrap();
                                             mutex.push(instance);
+                                            lines.remove(0);
                                         },
                                         None => return Err(RequestError::SyntaxError),
                                     },
@@ -208,6 +209,7 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                                 let mut map: LinkedHashMap<String, Data> = LinkedHashMap::new();
                                                                 map.insert(field, data);
                                                                 instance.data.extend(map);
+                                                                //lines.remove(0);
                                                             }
                                                             _ => return Err(RequestError::SyntaxError)
                                                         },
@@ -260,8 +262,9 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                 let end_index = *lines.iter().enumerate()
                                                     .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
                                                     .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap()-1;
-                                                let lines: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
-                                                let result = multiline_query(instance.clone(), lines, &mut mutex)?;
+                                                let set_lines: Vec<Vec<TokenMatch>> = lines.drain(start_index..=end_index).collect();
+                                                lines.drain(0..end_index);
+                                                let result = multiline_query(instance.clone(), set_lines, &mut mutex)?;
                                                 output.extend(result.clone());
                                             }
                                             _ => return Err(RequestError::SyntaxError)
