@@ -6,19 +6,20 @@ No nesting of structures is supported, but may be implemented in the future.
 
 |Name|Description|
 |-|-|
-|QUERY|Used to get a Object by it's name.|
-|CREATE|Cerate an object from an template.|
+|QUERY|Used to get an Object by it's name.|
+|CREATE|Create an object from a template.|
 |GET|Get a value from an object with a key.|
 |SET|Overwrite a value from an object using a key.|
-|VALUE|Define the value for the PUT command.|
-|TYPE|Defines field type of template or defines new template.|
+|VALUE|Defines the value for the PUT command.|
+|TYPE|Defines field type of a template or defines a new template.|
 |NAME|Declare field name.|
-|STARTING|Declare value of field if nothing is set.|
-|END|Mark end of template definition.|
+|STARTING|Declares the value of a field if nothing is set.|
+|END|Marks the end of template definition.|
+|DELETE|Used to delete instances and templates.|
 
 ## Responses
 
-DB responds with the requested instances or templates with the specified fields.
+The DB responds with the requested instances or templates with their specified fields.
 
 
 ## Example
@@ -38,7 +39,7 @@ END;
 
 ### Create Objects
 
-Make a instance of a defined template with a key.
+Make an instance of a defined template with a key.
 ```
 CREATE "Monday" TYPE "DAY";
 ```
@@ -66,12 +67,12 @@ QUERY TYPE;
 
 ### Delete Objects
 
-This will delete just the instance.
+This will only the delete the given instance.
 ```
 DELETE "Monday"
 ```
 
-This will delete all instances with the type and the type itself.
+This will delete all instances with the type and the template itself.
 ```
 DELETE TYPE "DAY"
 ```
