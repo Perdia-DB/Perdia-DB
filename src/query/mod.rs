@@ -258,7 +258,7 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                                                 }
                                             }
                                             Token::Then => {
-                                                let start_index = index+2;
+                                                let start_index = index+1;
                                                 let end_index = *lines.iter().enumerate()
                                                     .filter(|(_, line)| line.get(0).unwrap().token == Token::End)
                                                     .map(|(index, _)| index).collect::<Vec<usize>>().get(0).unwrap()-1;
