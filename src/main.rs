@@ -1,5 +1,7 @@
 use std::env;
+use dotenv::dotenv;
 
+use backup::SaveWorker;
 use data::{TEMPLATES, template::Template};
 use serde::Serialize;
 use serde_json::*;
@@ -11,21 +13,27 @@ use query::error::RequestError;
 mod lexer;
 mod data;
 mod query;
+mod backup;
 
 static BUFFER_SIZE: usize = 1048576;
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok(); // for testing
 
-    //env::set_var("RUST_BACKTRACE", "1");
+    // Init the background worker for disk-writes
+    let save_worker = SaveWorker::new().init();
 
+    // Set the webserver to listen to test-port
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
 
+    // Server loop to process incomming requests
     loop {
-        let (mut stream, other) = listener.accept().await.unwrap();
+        let (mut stream, _) = listener.accept().await.unwrap();
         process(&mut stream).await;
     }
-
+    // Shutdown the background worker for disk-writes
+    save_worker.shutdown();
 }
 
 #[derive(Serialize)]
@@ -65,10 +73,11 @@ impl From<RequestError> for ErrorResponse {
     }
 }
 
+// Process incoming request and query
 async fn process(stream: &mut TcpStream) {
     let ready = stream.ready(Interest::READABLE | Interest::WRITABLE).await.expect("Couldn't read stream.");
     
-    //if ready.is_readable() && ready.is_writable() {
+    if ready.is_readable() && ready.is_writable() {
         let mut buf = Vec::with_capacity(BUFFER_SIZE);
         let len = stream.try_read_buf(&mut buf).expect("Failed to stream to buffer.");
         let source = String::from_utf8(buf.split_at(len).0.to_vec()).expect("Input is not UTF-8.");
@@ -81,7 +90,7 @@ async fn process(stream: &mut TcpStream) {
                 stream.write(response.as_str().as_bytes()).await.expect("Couldn't send result.");
             },
         };
-    //}
+    }
 
     stream.shutdown();
 }
