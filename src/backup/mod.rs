@@ -1,64 +1,40 @@
-use std::{sync::{Arc, Mutex, mpsc::{self, Receiver, Sender}}, thread, time::{Duration, Instant}};
+use std::{sync::{Arc, Mutex, mpsc::{self, Receiver, Sender}, atomic::{AtomicBool, Ordering}}, thread::{self, JoinHandle}, time::{Duration, Instant}};
 use lazy_static::lazy_static;
 use tokio::time::interval;
-use crate::{data::{INSTANCES, TEMPLATES, template::Template}, plog, pwarn};
+use crate::{data::{INSTANCES, TEMPLATES, template::Template}, plog, pwarn, perr};
 
-enum TransmitionState {
-    Shutdown,
-    Force,
+lazy_static! {
+    static ref SAVE_DIR: String = std::env::var("DIR").unwrap_or("./backup/".to_string());
 }
 
 pub struct SaveWorker {
-    dir: String,
-    instances: Arc<Mutex<Vec<Template>>>, 
-    templates: Arc<Mutex<Vec<Template>>>,
-
+    shutdown: Arc<AtomicBool>,
+    handle: JoinHandle<()>,
 }
 
 impl SaveWorker {
 
     pub fn new() -> Self {
-        let dir = std::env::var("DIR").unwrap_or("./backup/".to_string());
-        std::fs::create_dir(&dir);
-        //let (tx, rx) = mpsc::channel();
-        let instances = Arc::clone(&INSTANCES);
-        let templates = Arc::clone(&TEMPLATES);
-        
+        let shutdown = Arc::new(AtomicBool::new(false));
+        let arc = Arc::clone(&shutdown);
+        let handle = thread::spawn(move || SaveWorker::background(arc));
         Self { 
-            dir, instances, templates
+            shutdown,
+            handle,
         }
     }
 
-    pub fn init(self) -> Arc<Self> {
-        let this = Arc::new(self);
-        let arc = Arc::clone(&this);
-        let handle = thread::spawn(move || {
-            let interval_time = u64::from_str_radix(std::env::var("SAVE_FREQ").unwrap_or("120".to_string()).as_str(), 10).unwrap_or(120);
-            arc.load();
-
-            let mut last_instant = Instant::now();
-            loop {
-                let current_instant = Instant::now();
-                // Time is up
-                if current_instant.duration_since(last_instant).as_secs() >= interval_time {
-                    arc.save();
-                    last_instant = Instant::now();
-                }
-            }
-        });
-        this
-    }
-
-    fn load(&self) {
-        let instances_res = std::fs::read_to_string(format!("{}/instances.json", self.dir));
-        let templates_res = std::fs::read_to_string(format!("{}/templates.json", self.dir));
+    fn load() {
+        let instances_res = std::fs::read_to_string(format!("{}/instances.json", SAVE_DIR.to_string()));
+        let templates_res = std::fs::read_to_string(format!("{}/templates.json", SAVE_DIR.to_string()));
 
         match instances_res {
             Ok(json_string) => {
                 match serde_json::from_str::<Vec<Template>>(&json_string) {
                     Ok(instances) => {
-                        let mut mutex = self.instances.lock().unwrap();
+                        let mut mutex = INSTANCES.lock().unwrap();
                         *mutex = instances;
+                        plog!("Successfully loaded instance backup!")
                     },
                     Err(_) => pwarn!("No previous backup file was invalid!"),
                 }
@@ -70,8 +46,9 @@ impl SaveWorker {
             Ok(json_string) => {
                 match serde_json::from_str::<Vec<Template>>(&json_string) {
                     Ok(templates) => {
-                        let mut mutex = self.templates.lock().unwrap();
+                        let mut mutex = TEMPLATES.lock().unwrap();
                         *mutex = templates;
+                        plog!("Successfully loaded template backup!")
                     },
                     Err(_) => pwarn!("No previous backup file was invalid!"),
                 }
@@ -80,14 +57,38 @@ impl SaveWorker {
         }
     }
 
-    fn save(&self) {
-        let instances_mutex = self.instances.lock().unwrap();
-        let templates_mutex = self.templates.lock().unwrap();
-        std::fs::write(format!("{}/instances.json", self.dir), serde_json::to_string_pretty(&*instances_mutex).unwrap()).expect("Failed to write backup.");
-        std::fs::write(format!("{}/templates.json", self.dir), serde_json::to_string_pretty(&*templates_mutex).unwrap()).expect("Failed to write backup.");
+    fn save() {
+        let instances_mutex = INSTANCES.lock().unwrap();
+        let templates_mutex = TEMPLATES.lock().unwrap();
+        std::fs::write(format!("{}/instances.json", SAVE_DIR.to_string()), serde_json::to_string_pretty(&*instances_mutex).unwrap()).expect("Failed to write backup.");
+        std::fs::write(format!("{}/templates.json", SAVE_DIR.to_string()), serde_json::to_string_pretty(&*templates_mutex).unwrap()).expect("Failed to write backup.");
     }
 
-    pub fn shutdown(&self) {
+    fn background(shutdown: Arc<AtomicBool>) {
+        let interval_time = u64::from_str_radix(std::env::var("SAVE_FREQ").unwrap_or("120".to_string()).as_str(), 10).unwrap_or(120);
+        SaveWorker::load();
 
+        plog!("Started background process, save interval is {}s.", interval_time);
+
+        let mut last_instant = Instant::now();
+        while !shutdown.load(Ordering::SeqCst) {
+            let current_instant = Instant::now();
+            // Time is up
+            if current_instant.duration_since(last_instant).as_secs() >= interval_time {
+                SaveWorker::save();
+                last_instant = Instant::now();
+            }
+        }
+        plog!("Shutting down background process...");
+        SaveWorker::save();
+
+    }
+
+    pub fn shutdown(self) {
+        self.shutdown.store(true, Ordering::SeqCst);
+        match self.handle.join() {
+            Ok(_) => plog!("Successfully shut down background process!"),
+            Err(_) => perr!("Something went wrong while background process was shutting down!"),
+        };
     }
 }

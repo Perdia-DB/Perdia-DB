@@ -25,7 +25,7 @@ async fn main() {
     dotenv().ok(); // for testing
 
     // Init the background worker for disk-writes
-    let save_worker = SaveWorker::new().init();
+    let save_worker = SaveWorker::new();
 
     // Set the webserver to listen to test-port
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
