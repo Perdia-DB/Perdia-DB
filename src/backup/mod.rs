@@ -1,7 +1,7 @@
 use std::{sync::{Arc, Mutex, mpsc::{self, Receiver, Sender}}, thread, time::{Duration, Instant}};
 use lazy_static::lazy_static;
 use tokio::time::interval;
-use crate::data::{INSTANCES, TEMPLATES, template::Template};
+use crate::{data::{INSTANCES, TEMPLATES, template::Template}, plog, pwarn};
 
 enum TransmitionState {
     Shutdown,
@@ -34,6 +34,7 @@ impl SaveWorker {
         let arc = Arc::clone(&this);
         let handle = thread::spawn(move || {
             let interval_time = u64::from_str_radix(std::env::var("SAVE_FREQ").unwrap_or("120".to_string()).as_str(), 10).unwrap_or(120);
+            arc.load();
 
             let mut last_instant = Instant::now();
             loop {
@@ -46,6 +47,37 @@ impl SaveWorker {
             }
         });
         this
+    }
+
+    fn load(&self) {
+        let instances_res = std::fs::read_to_string(format!("{}/instances.json", self.dir));
+        let templates_res = std::fs::read_to_string(format!("{}/templates.json", self.dir));
+
+        match instances_res {
+            Ok(json_string) => {
+                match serde_json::from_str::<Vec<Template>>(&json_string) {
+                    Ok(instances) => {
+                        let mut mutex = self.instances.lock().unwrap();
+                        *mutex = instances;
+                    },
+                    Err(_) => pwarn!("No previous backup file was invalid!"),
+                }
+            },
+            Err(_) => pwarn!("No previous backup file for templates!"),
+        }
+
+        match templates_res {
+            Ok(json_string) => {
+                match serde_json::from_str::<Vec<Template>>(&json_string) {
+                    Ok(templates) => {
+                        let mut mutex = self.templates.lock().unwrap();
+                        *mutex = templates;
+                    },
+                    Err(_) => pwarn!("No previous backup file was invalid!"),
+                }
+            },
+            Err(_) => pwarn!("No previous backup file for instances!"),
+        }
     }
 
     fn save(&self) {

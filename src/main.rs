@@ -14,11 +14,14 @@ mod lexer;
 mod data;
 mod query;
 mod backup;
+mod util;
+
 
 static BUFFER_SIZE: usize = 1048576;
 
 #[tokio::main]
 async fn main() {
+    plog!("Started");
     dotenv().ok(); // for testing
 
     // Init the background worker for disk-writes
@@ -29,7 +32,8 @@ async fn main() {
 
     // Server loop to process incomming requests
     loop {
-        let (mut stream, _) = listener.accept().await.unwrap();
+        let (mut stream, addr) = listener.accept().await.unwrap();
+        plog!("Query was issued from: {}", addr.ip());
         process(&mut stream).await;
     }
     // Shutdown the background worker for disk-writes
@@ -81,7 +85,6 @@ async fn process(stream: &mut TcpStream) {
         let mut buf = Vec::with_capacity(BUFFER_SIZE);
         let len = stream.try_read_buf(&mut buf).expect("Failed to stream to buffer.");
         let source = String::from_utf8(buf.split_at(len).0.to_vec()).expect("Input is not UTF-8.");
-        println!("{}", source);
         let result = query::data(lexer::parse(&source));
         match result {
             Ok(value) => { stream.write(value.as_str().as_bytes()).await.expect("Couldn't send result."); },
