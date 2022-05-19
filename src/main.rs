@@ -1,14 +1,5 @@
-use std::env;
 use dotenv::dotenv;
-
-use backup::SaveWorker;
-use data::{TEMPLATES, template::Template};
-use serde::Serialize;
-use serde_json::*;
-use tokio::{net::{TcpListener, TcpSocket, TcpStream}, io::{Interest, AsyncWriteExt}, signal};
-
-use crate::data::INSTANCES;
-use query::error::RequestError;
+use tokio::{net::{TcpListener}, signal};
 
 mod lexer;
 mod data;
@@ -16,9 +7,7 @@ mod query;
 mod backup;
 mod util;
 mod server;
-
-
-static BUFFER_SIZE: usize = 1048576;
+mod crypto;
 
 #[tokio::main]
 async fn main() {
