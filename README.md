@@ -7,7 +7,7 @@ No nesting of structures is supported, but may be implemented in the future.
 |Name|Description|
 |-|-|
 |PORT|Port on which the db-server will host it's service.|
-|AES_KEY|Key used for traffic encryption using AES-256|
+|AES_KEY|Key used for traffic encryption using AES-128|
 |DIR|Disk-save directory path.|
 |SAVE_FREQ|Disk-save interval in seconds.|
 
