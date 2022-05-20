@@ -15,5 +15,7 @@ Cargo.lock
 /target
 
 /.idea
+/.vscode
+
 /.env
 ./backup

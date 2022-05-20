@@ -2,6 +2,15 @@
 A simple key value database for storing simple structures.
 No nesting of structures is supported, but may be implemented in the future.
 
+## Environment Variables
+
+|Name|Description|
+|-|-|
+|PORT|Port on which the db-server will host it's service.|
+|AES_KEY|Key used for traffic encryption using AES-128.|
+|DIR|Disk-save directory path.|
+|SAVE_FREQ|Disk-save interval in seconds.|
+
 ## Tokens
 
 |Name|Description|

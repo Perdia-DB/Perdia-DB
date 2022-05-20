@@ -1,6 +1,5 @@
 use std::{sync::{Arc, Mutex, mpsc::{self, Receiver, Sender}, atomic::{AtomicBool, Ordering}}, thread::{self, JoinHandle}, time::{Duration, Instant}};
 use lazy_static::lazy_static;
-use tokio::time::interval;
 use crate::{data::{INSTANCES, TEMPLATES, template::Template}, plog, pwarn, perr};
 
 lazy_static! {
