@@ -1,6 +1,8 @@
 use aes::{cipher::{generic_array::GenericArray, typenum::{UInt, UTerm}, consts::{B1, B0}, KeyInit, BlockEncrypt, BlockDecrypt}, Aes128};
 use crypto::{sha3::Sha3, digest::Digest};
 
+use crate::pwarn;
+
 pub struct Key {
     key: GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B0>, B0>, B0>, B0>>,
     cipher: Aes128,
@@ -28,14 +30,16 @@ impl Key {
                 }
                 let mut block: [u8; 16] = [0u8; 16];
                 block.copy_from_slice(bytes.as_slice());
-                self.cipher.encrypt_block(&mut GenericArray::from(block));
+                let mut block = GenericArray::from(block);
+                self.cipher.encrypt_block(&mut block);
                 output.extend(&block);
                 break 'encrypt_loop;
             } else {
                 let (slice, b) = bytes.split_at(16);
                 let mut block: [u8; 16] = [0u8; 16];
                 block.copy_from_slice(slice);
-                self.cipher.encrypt_block(&mut GenericArray::from(block));
+                let mut block = GenericArray::from(block);
+                self.cipher.encrypt_block(&mut block);
                 output.extend(&block);
                 bytes = b.to_vec();
             }
@@ -49,20 +53,14 @@ impl Key {
         let mut output: Vec<u8> = Vec::with_capacity(bytes.len() % 16);
         'encrypt_loop: 
         loop {
-            if bytes.len() <= 16 {
-                for _ in bytes.len()..16 {
-                    bytes.push(0);
-                }
-                let mut block: [u8; 16] = [0u8; 16];
-                block.copy_from_slice(bytes.as_slice());
-                self.cipher.decrypt_block(&mut GenericArray::from(block));
-                output.extend(&block);
+            if bytes.len() == 0 {
                 break 'encrypt_loop;
             } else {
                 let (slice, b) = bytes.split_at(16);
                 let mut block: [u8; 16] = [0u8; 16];
                 block.copy_from_slice(slice);
-                self.cipher.decrypt_block(&mut GenericArray::from(block));
+                let mut block = GenericArray::from(block);
+                self.cipher.decrypt_block(&mut block);
                 output.extend(&block);
                 bytes = b.to_vec();
             }
