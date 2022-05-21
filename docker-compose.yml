@@ -1,7 +1,9 @@
 services:
   web:
-    build: .
+    build: ./
     ports:
-      - "$PORT:80"
+      - "${PORT}:3000/tcp"
     env_file:
       - .env
+    volumes:
+      - "./backup:/app/backup"

@@ -56,7 +56,7 @@ impl Server {
     // Process incoming request and query
     async fn process(&self, stream: &mut TcpStream) -> Result<(), Error> {
         (stream.readable().await?, stream.writable().await?);
-
+        
         let mut buf = Vec::with_capacity(BUFFER_SIZE);
         let len = stream.try_read_buf(&mut buf)?;
         let data = self.decrypt(buf.split_at(len).0.to_vec());

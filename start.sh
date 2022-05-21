@@ -1,1 +1,1 @@
-docker compose up && docker compose rm -f
+docker compose up --service-ports && docker compose rm -f

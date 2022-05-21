@@ -1,8 +1,11 @@
 FROM rust:latest
 
-COPY ./ ./
+COPY ./src /app/src
+COPY ./Cargo.toml /app/Cargo.toml
+WORKDIR /app
 
-EXPOSE 80
+EXPOSE 3000/tcp
+
 RUN cargo build --release
 
-CMD ["./target/release/perdia_db.exe"]
+CMD /app/target/release/perdia_db
