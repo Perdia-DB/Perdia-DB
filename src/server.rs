@@ -59,7 +59,8 @@ impl Server {
 
         let mut buf = Vec::with_capacity(BUFFER_SIZE);
         let len = stream.try_read_buf(&mut buf)?;
-        let source = String::from_utf8(buf.split_at(len).0.to_vec())?;
+        let data = self.decrypt(buf.split_at(len).0.to_vec());
+        let source = String::from_utf8(data)?;
         let result = query::data(lexer::parse(&source));
         self.send(stream, result).await?;
 

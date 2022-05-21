@@ -48,7 +48,7 @@ impl Key {
 
     // TODO: Improve performance
     pub fn decrypt(&self, mut bytes: Vec<u8>) -> Vec<u8> {
-        let mut output: Vec<u8> = Vec::with_capacity(bytes.len() % 16);
+        let mut output: Vec<u8> = Vec::with_capacity(bytes.len());
         'encrypt_loop: 
         loop {
             if bytes.len() == 0 {

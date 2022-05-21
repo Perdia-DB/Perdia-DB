@@ -18,4 +18,5 @@ Cargo.lock
 /.vscode
 
 /.env
-./backup
+/backup
+/dkaishbd
