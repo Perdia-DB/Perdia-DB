@@ -1,8 +1,6 @@
 use aes::{cipher::{generic_array::GenericArray, typenum::{UInt, UTerm}, consts::{B1, B0}, KeyInit, BlockEncrypt, BlockDecrypt}, Aes128};
 use crypto::{sha3::Sha3, digest::Digest};
 
-use crate::pwarn;
-
 pub struct Key {
     key: GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B0>, B0>, B0>, B0>>,
     cipher: Aes128,

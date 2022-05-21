@@ -55,17 +55,13 @@ struct Server {
 impl Server {
     // Process incoming request and query
     async fn process(&self, stream: &mut TcpStream) -> Result<(), Error> {
-        let ready = stream.ready(Interest::READABLE | Interest::WRITABLE).await?;
-        
-        if ready.is_readable() && ready.is_writable() {
+        (stream.readable().await?, stream.writable().await?);
 
-            let mut buf = Vec::with_capacity(BUFFER_SIZE);
-            let len = stream.try_read_buf(&mut buf)?;
-            let source = String::from_utf8(buf.split_at(len).0.to_vec())?;
-            let result = query::data(lexer::parse(&source));
-
-            self.send(stream, result).await?;
-        }
+        let mut buf = Vec::with_capacity(BUFFER_SIZE);
+        let len = stream.try_read_buf(&mut buf)?;
+        let source = String::from_utf8(buf.split_at(len).0.to_vec())?;
+        let result = query::data(lexer::parse(&source));
+        self.send(stream, result).await?;
 
         stream.shutdown().await?;
         Ok(())
