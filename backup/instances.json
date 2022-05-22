@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "template": "DAY",
+    "instance": "Montag",
+    "data": {
+      "First": "Science",
+      "Second": "CS"
+    }
+  }
+]

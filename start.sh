@@ -1,1 +1,1 @@
-docker compose up --service-ports && docker compose rm -f
+docker build . -t "perdia-db" #&& docker run -p "127.0.0.1:$1:3000" -e --name perdia-db -it perdia-db

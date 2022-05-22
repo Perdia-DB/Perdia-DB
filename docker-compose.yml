@@ -1,6 +1,7 @@
+version: "3.8"
 services:
-  web:
-    build: ./
+  perdia:
+    image: "rust:latest"
     ports:
       - "${PORT}:3000/tcp"
     env_file:
