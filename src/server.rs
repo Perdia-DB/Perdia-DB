@@ -62,6 +62,8 @@ impl Server {
         let len = stream.try_read_buf(&mut buf)?;
         let data = self.decrypt(buf.split_at(len).0.to_vec());
         let source = String::from_utf8(data)?;
+        // Removing trailing padding 0's from decrypted query
+        let source = source.trim_matches(char::from(0)).to_string();
         let result = query::data(lexer::parse(&source));
         self.send(stream, result).await?;
 
