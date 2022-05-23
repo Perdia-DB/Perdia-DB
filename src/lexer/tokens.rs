@@ -1,6 +1,6 @@
 use super::data::{Token, TokenDefinition};
 
-/// Initializes every [`TokenDefinition`]
+/// Initializes every [`TokenDefinition`] and defines the regex for each.
 pub fn initialize() -> Vec<TokenDefinition> {
     let mut token_definitions = Vec::<TokenDefinition>::with_capacity(13);
 

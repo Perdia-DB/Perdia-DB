@@ -1,12 +1,19 @@
 use aes::{cipher::{generic_array::GenericArray, typenum::{UInt, UTerm}, consts::{B1, B0}, KeyInit, BlockEncrypt, BlockDecrypt}, Aes128};
 use crypto::{sha3::Sha3, digest::Digest};
 
+/// An abstraction for the underlying AES128 and Shake128 ciphers
+/// 
+/// Key operates as follows:
+/// 
+/// The [`Key`] generates a Shake128 hash of the passed raw key([`Vec<u8>`]),
+/// it then takes encrypts or decrypts some bytes([`Vec<u8>`]) using AES128 and returns the result.
 pub struct Key {
     key: GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B0>, B0>, B0>, B0>>,
     cipher: Aes128,
 }
 
 impl Key {
+    /// 
     pub fn new(key: Vec<u8>) -> Self {
         let mut hasher = Sha3::shake_128();
         hasher.input(&key);
@@ -18,6 +25,7 @@ impl Key {
     }
 
     // TODO: Improve performance
+    /// Encrypt some bytes([`Vec<u8>`]) using AES128.
     pub fn encrypt(&self, mut bytes: Vec<u8>) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::with_capacity(bytes.len());
         'encrypt_loop: 
@@ -47,6 +55,7 @@ impl Key {
     }
 
     // TODO: Improve performance
+    /// Decrypt some bytes([`Vec<u8>`]) using AES128.
     pub fn decrypt(&self, mut bytes: Vec<u8>) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::with_capacity(bytes.len());
         'encrypt_loop: 
@@ -82,6 +91,7 @@ impl From<String> for Key {
     }
 }
 
+/// Make new [`Key`] from inner key.
 impl Into<GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B0>, B0>, B0>, B0>>> for Key {
     fn into(self) -> GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B0>, B0>, B0>, B0>> {
         self.key
