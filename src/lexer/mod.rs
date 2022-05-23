@@ -9,7 +9,8 @@ lazy_static! {
     pub static ref TOKEN_DEFINITIONS: Vec<TokenDefinition> = tokens::initialize();
 }
 
-pub fn parse(source: &String) -> Vec<Vec<TokenMatch>> {
+pub fn parse(mut source: String) -> Vec<Vec<TokenMatch>> {
+    source.push_str("\n");
     let mut token_matches: Vec<TokenMatch> = Vec::new();
     TOKEN_DEFINITIONS.iter()
         .for_each(|definition| 

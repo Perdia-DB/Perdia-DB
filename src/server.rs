@@ -64,7 +64,7 @@ impl Server {
         let source = String::from_utf8(data)?;
         // Removing trailing padding 0's from decrypted query
         let source = source.trim_matches(char::from(0)).to_string();
-        let result = query::data(lexer::parse(&source));
+        let result = query::data(lexer::parse(source));
         self.send(stream, result).await?;
 
         stream.shutdown().await?;
