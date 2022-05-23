@@ -1,10 +1,12 @@
 version: "3.8"
 services:
   perdia:
-    image: "rust:latest"
+    build: .
     ports:
       - "${PORT}:3000/tcp"
     env_file:
       - .env
     volumes:
-      - "./backup:/app/backup"
+      - "backup-volume:/app/backup"
+volumes:
+  backup-volume:

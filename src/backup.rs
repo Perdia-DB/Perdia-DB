@@ -8,7 +8,7 @@ lazy_static! {
 
 pub struct SaveWorker {
     shutdown: Arc<AtomicBool>,
-    handle: JoinHandle<()>,
+    handle: Option<JoinHandle<()>>,
 }
 
 impl SaveWorker {
@@ -17,9 +17,16 @@ impl SaveWorker {
         let shutdown = Arc::new(AtomicBool::new(false));
         let arc = Arc::clone(&shutdown);
         let handle = thread::spawn(move || SaveWorker::background(arc));
+        match std::fs::try_exists(SAVE_DIR.to_string()) {
+            Ok(_) => {},
+            Err(_) => match std::fs::create_dir(SAVE_DIR.to_string()) {
+                Ok(_) => plog!("Created save-directory!"),
+                Err(_) => pwarn!("Failed to create save-directory!"),
+            },
+        }
         Self { 
             shutdown,
-            handle,
+            handle: Some(handle),
         }
     }
 
@@ -83,11 +90,19 @@ impl SaveWorker {
 
     }
 
-    pub fn shutdown(self) {
+    pub fn shutdown(&mut self) {
         self.shutdown.store(true, Ordering::SeqCst);
-        match self.handle.join() {
-            Ok(_) => plog!("Successfully shut down background process!"),
-            Err(_) => perr!("Something went wrong while background process was shutting down!"),
-        };
+        if let Some(handle) = self.handle.take() {
+            match handle.join() {
+                Ok(_) => plog!("Successfully shut down background process!"),
+                Err(_) => perr!("Something went wrong while background process was shutting down!"),
+            };
+        }
+    }
+}
+
+impl Drop for SaveWorker {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }

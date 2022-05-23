@@ -50,6 +50,7 @@ impl From<RequestError> for ErrorResponse {
 struct Server {
     listener: TcpListener,
     aes_key: Vec<u8>,
+    save_worker: SaveWorker,
 }
 
 impl Server {
@@ -93,9 +94,15 @@ impl Server {
     async fn run(&mut self) -> Result<(), Error> {
         loop {
             let (mut stream, addr) = self.listener.accept().await?;
-            plog!("Query was issued from: {}", addr.ip());
             self.process(&mut stream).await?;
         }
+    }
+}
+
+impl Drop for Server {
+    fn drop(&mut self) {
+        self.save_worker.shutdown();
+        plog!("Shutting down server!")
     }
 }
 
@@ -111,18 +118,15 @@ pub async fn run(listener: TcpListener, shutdown: impl Future)  {
     let mut server = Server {
         listener,
         aes_key,
+        save_worker
     };
 
     tokio::select! {
         res = server.run() => {
             if let Err(err) = res {
-                save_worker.shutdown();
                 perr!("Failed to accept: {}", err);
             }
         }
-        _ = shutdown => {
-            save_worker.shutdown();
-            plog!("Shutting down server!")
-        }
+        _ = shutdown => {}
     }
 }

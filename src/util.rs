@@ -5,10 +5,8 @@ pub const DATE_FORMAT_STR: &'static [FormatItem<'static>] = format_description!(
 pub fn prefix() -> String {
     use time::OffsetDateTime; 
     use colored::*;
-    format!("{}{}{}", 
-            "[Perdia]".bold().cyan(),
+    format!("{} >  ", 
             format!("[{}]", OffsetDateTime::now_utc().format(&DATE_FORMAT_STR).unwrap_or("".to_string())).cyan(),
-            format!("[{}]:", std::process::id()).cyan()
         )
 }
 
@@ -18,7 +16,7 @@ macro_rules! plog {
     ($($arg:tt)*) => ({ 
         use crate::util::prefix;
         use colored::*;
-        print!("{} {}\n", 
+        print!("{}{}\n", 
             prefix(),
             format!("{}", format_args!($($arg)*)).bright_white()
         ) 
@@ -31,7 +29,7 @@ macro_rules! pwarn {
     ($($arg:tt)*) => ({ 
         use crate::util::prefix;
         use colored::*;
-        print!("{} {}\n", 
+        print!("{}{}\n", 
             prefix(),
             format!("{}", format_args!($($arg)*)).on_bright_yellow().black().bold()
         ) 
@@ -44,7 +42,7 @@ macro_rules! perr {
     ($($arg:tt)*) => ({ 
         use crate::util::prefix;
         use colored::*;
-        print!("{} {}\n", 
+        print!("{}{}\n", 
             prefix(),
             format!("{}", format_args!($($arg)*)).on_bright_red().black().bold()
         ) 

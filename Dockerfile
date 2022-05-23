@@ -7,6 +7,7 @@ WORKDIR /app
 
 EXPOSE 3000
 
+RUN rustup override set nightly
 RUN cargo build --release
 
-CMD /app/target/release/perdia_db
+CMD [ "/app/target/release/perdia_db" ] 
