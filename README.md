@@ -2,6 +2,9 @@
 A simple key value database for storing simple structures.
 No nesting of structures is supported, but may be implemented in the future.
 
+## Encryption
+![encryption](./images/Encryption.png)
+
 ## Environment Variables
 
 |Name|Description|
