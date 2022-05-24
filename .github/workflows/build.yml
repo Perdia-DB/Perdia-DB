@@ -18,3 +18,5 @@ jobs:
       run: cp ./CI.env ./.env
     - name: Build the Docker image
       run: docker compose build
+    - name: Run the container for 10s.
+      run: docker compose up & (sleep 10s && docker compose down)
