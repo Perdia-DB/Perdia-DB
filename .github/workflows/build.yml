@@ -1,0 +1,22 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches-ignore: [ ]
+  pull_request:
+    branches-ignore: [ ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Create .env file
+      run: cp ./CI.env ./.env
+    - name: Build the Docker image
+      run: docker compose build
+    - name: Run the container for 10s.
+      run: docker compose up & (sleep 10s && docker compose down)
