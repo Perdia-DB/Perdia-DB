@@ -59,7 +59,7 @@ pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, Requ
     Ok(template.build())
 }
 
-/// executes multiline querries.
+/// executes multiline queries.
 pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &mut MutexGuard<Vec<Template>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     let mut instance = Box::new(instance);
@@ -141,7 +141,7 @@ pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &
 }
 
 // TODO: Should be reworked to feature an ast with dynamic execution. For now this very rigid model works `fine`.
-/// Executes the statements from the querry.
+/// Executes the statements from the query.
 pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     for (index, line) in lines.clone().iter().enumerate() {
@@ -283,7 +283,7 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
                         None => return Err(RequestError::SyntaxError),
                     }
                 },
-                // Pull out whole template
+                // Pull out the whole template
                 Token::Type => {
                     //let start_index = index;
                     let start_index = 0;

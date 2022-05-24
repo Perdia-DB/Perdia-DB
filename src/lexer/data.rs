@@ -4,7 +4,7 @@ use regex::Regex;
 
 /// The different Keywords used in PANG
 /// 
-/// It has 15 Tokens
+/// It has 19 Tokens in total
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Token {
     Remove,
@@ -47,10 +47,11 @@ pub struct TokenDefinition {
 }
 
 impl TokenDefinition {
-    /// Create a new TokenDefinition,   
+    /// Creates a new TokenDefinition   
     /// based on a [`Token`], a `Regex` string to match the token against and a priority.
     /// 
-    /// Every TokenDefinition gets sorted based on this priority and those with higher priority will go first in the parsing process.
+    /// Every TokenDefinition gets sorted based on their priority and those with higher priority 
+    /// will get processed first in the parsing process.
     pub fn new(token: Token, regex: &str, priority: u8) -> Self {
         Self {
             regex: Regex::new(regex).unwrap(),
@@ -88,7 +89,7 @@ impl TokenDefinition {
         already_matched.append(&mut result);
     }
 
-    /// Returns true if first [`Range`] is overlapping second [`Range`]
+    /// Returns true if first [`Range`] is overlapping with the second [`Range`]
     fn range_overlap(first: Range<usize>, second: Range<usize>) -> bool {
         (first.start >= second.start && first.start <= second.end) ||
         (first.end-1 >= second.start && first.end-1 <= second.end)
