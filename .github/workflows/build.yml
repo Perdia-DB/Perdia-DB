@@ -1,0 +1,21 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches-ignore: [ ]
+  pull_request:
+    branches-ignore: [ ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image and run it in a container
+      run: docker compose up
+      
+    - name: Shutdown the container
+      run: docker compose down
