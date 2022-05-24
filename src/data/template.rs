@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize, de::Visitor};
 
 use super::serialization::{Data, DataType, DataUnion};
 
+/// The core structure of the in-memory values.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Template {
     pub template: Option<String>,

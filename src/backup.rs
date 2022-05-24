@@ -6,6 +6,8 @@ lazy_static! {
     static ref SAVE_DIR: String = std::env::var("DIR").unwrap_or("./backup/".to_string());
 }
 
+/// The [`SaveWorker`] is a wrapper for the save background process, that manages the disk backup.
+/// It takes the values in memory and writes them to the disk.
 pub struct SaveWorker {
     shutdown: Arc<AtomicBool>,
     handle: Option<JoinHandle<()>>,
@@ -30,6 +32,7 @@ impl SaveWorker {
         }
     }
 
+    /// Load values from disk into memory
     fn load() {
         let instances_res = std::fs::read_to_string(format!("{}/instances.json", SAVE_DIR.to_string()));
         let templates_res = std::fs::read_to_string(format!("{}/templates.json", SAVE_DIR.to_string()));
@@ -63,6 +66,7 @@ impl SaveWorker {
         }
     }
 
+    /// Write memory to disk
     fn save() {
         let instances_mutex = INSTANCES.lock().unwrap();
         let templates_mutex = TEMPLATES.lock().unwrap();
@@ -70,6 +74,7 @@ impl SaveWorker {
         std::fs::write(format!("{}/templates.json", SAVE_DIR.to_string()), serde_json::to_string_pretty(&*templates_mutex).unwrap()).expect("Failed to write backup.");
     }
 
+    /// Background threat handles the backups.
     fn background(shutdown: Arc<AtomicBool>) {
         let interval_time = u64::from_str_radix(std::env::var("SAVE_FREQ").unwrap_or("120".to_string()).as_str(), 10).unwrap_or(120);
         SaveWorker::load();
@@ -90,6 +95,7 @@ impl SaveWorker {
 
     }
 
+    /// Gracefully shutdown the SaveWorker and it's background process.
     pub fn shutdown(&mut self) {
         self.shutdown.store(true, Ordering::SeqCst);
         if let Some(handle) = self.handle.take() {

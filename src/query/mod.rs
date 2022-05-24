@@ -7,6 +7,7 @@ use crate::lexer::data::{Token, TokenMatch};
 
 pub mod error;
 
+/// Creates a new [`Template`] from a template declaration block.
 pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, RequestError> {
     let first = lines.remove(0);
     lines.remove(lines.len()-1);
@@ -58,6 +59,7 @@ pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, Requ
     Ok(template.build())
 }
 
+/// executes multiline querries.
 pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &mut MutexGuard<Vec<Template>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     let mut instance = Box::new(instance);
@@ -138,8 +140,8 @@ pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &
     Ok(output)
 }
 
-// Should be reworked to feature an ast with dynamic execution.
-// For now this very rigid model works fine.
+// TODO: Should be reworked to feature an ast with dynamic execution. For now this very rigid model works `fine`.
+/// Executes the statements from the querry.
 pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
     let mut output: Vec<Template> = Vec::new();
     for (index, line) in lines.clone().iter().enumerate() {

@@ -38,6 +38,7 @@ pub enum DataType {
     FLOAT,
 }
 
+/// A wrapper for the [`DataUnion`] union to make it typesafe.
 pub struct Data {
     pub data_type: DataType,
     pub data: DataUnion,

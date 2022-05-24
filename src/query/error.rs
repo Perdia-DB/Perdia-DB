@@ -1,4 +1,5 @@
 
+/// Possible errors in requests.
 #[derive(Debug)]
 pub enum RequestError {
     TemplateNonExistent,
