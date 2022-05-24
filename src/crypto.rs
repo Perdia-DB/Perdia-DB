@@ -6,14 +6,14 @@ use crypto::{sha3::Sha3, digest::Digest};
 /// Key operates as follows:
 /// 
 /// The [`Key`] generates a Shake128 hash of the passed raw key([`Vec<u8>`]),
-/// it then takes encrypts or decrypts some bytes([`Vec<u8>`]) using AES128 and returns the result.
+/// it then takes encrypts or decrypts a certain number of bytes ([`Vec<u8>`]) using AES128 and returns the result.
 pub struct Key {
     key: GenericArray<u8, UInt<UInt<UInt<UInt<UInt<UTerm, B1>, B0>, B0>, B0>, B0>>,
     cipher: Aes128,
 }
 
 impl Key {
-    /// 
+    /// Hashing the raw key using Shake128
     pub fn new(key: Vec<u8>) -> Self {
         let mut hasher = Sha3::shake_128();
         hasher.input(&key);
@@ -55,7 +55,7 @@ impl Key {
     }
 
     // TODO: Improve performance
-    /// Decrypt some bytes([`Vec<u8>`]) using AES128.
+    /// Decrypt the given bytes([`Vec<u8>`]) using AES128.
     pub fn decrypt(&self, mut bytes: Vec<u8>) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::with_capacity(bytes.len());
         'encrypt_loop: 
