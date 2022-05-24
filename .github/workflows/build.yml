@@ -16,8 +16,5 @@ jobs:
     - uses: actions/checkout@v3
     - name: Create .env file
       run: cp ./CI.env ./.env
-    - name: Build the Docker image and run it in a container
-      run: docker compose up
-      
-    - name: Shutdown the container
-      run: docker compose down
+    - name: Build the Docker image
+      run: docker compose build
