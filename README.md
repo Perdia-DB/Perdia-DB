@@ -40,51 +40,60 @@ The DB responds with the requested instances or templates with their specified f
 
 Declaration of templates should only occur in their own request. Although everything works fine when it is not.
 ```
-TYPE "DAY";
-NAME "First" TYPE STRING STARTING "Nothing";
-NAME "Second" TYPE STRING STARTING "Nothing";
-NAME "Third" TYPE STRING STARTING "Nothing";
-NAME "Day" TYPE INTEGER STARTING 1;
-NAME "Seconds" TYPE FLOAT;
-END;
+TEMPLATE "DAY";
+STRING "First" VALUE "Nothing";
+STRING "Second" VALUE "Nothing";
+STRING "Third" VALUE "Nothing";
+INTEGER "Day" VALUE 1;
+FLOAT "Seconds";
+END "DAY";
 ```
 
 ### Create Objects
 
 Make an instance of a defined template with a key.
 ```
-CREATE "Monday" TYPE "DAY";
+CREATE "Monday" TEMPLATE "DAY";
+```
+
+Make an exact copy of an already existing instance.
+```
+CREATE "Tuesday" INSTANCE "Monday";
 ```
 
 ### Query Objects
 
-Set/Get multiple fields.
+Set fields.
 ```
-QUERY "Monday" THEN; 
+SELECT "Monday"; 
 SET "First" VALUE "Science";
 SET "Second" VALUE "CS";
-END;
+END "Monday";
 ```
 
-Query objects by type
+Query templates
 ```
-QUERY TYPE "DAY" GET "First";
-QUERY TYPE "DAY" GET "First" "Seconds";
+QUERY "DAY" FROM TEMPLATE;
 ```
 
-Query all types
+Query instances
 ```
-QUERY TYPE;
+QUERY "Monday" FROM INSTANCE;
+```
+
+Query all templates
+```
+QUERY TEMPLATE;
 ```
 
 ### Delete Objects
 
 This will only the delete the given instance.
 ```
-DELETE "Monday"
+DELETE "Monday" FROM INSTANCE;
 ```
 
-This will delete all instances with the type and the template itself.
+This will delete all instances with the template and the template itself.
 ```
-DELETE TYPE "DAY"
+DELETE "DAY" FROM TEMPLATE;
 ```

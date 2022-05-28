@@ -1,12 +1,13 @@
-use std::sync::MutexGuard;
+use std::{sync::MutexGuard, time::Instant};
 
-use crate::data::{template::Template, TEMPLATES, INSTANCES, serialization::Data};
+use crate::{data::{template::Template, TEMPLATES, INSTANCES, serialization::Data}, plog, ast, perr};
 use error::RequestError;
 use linked_hash_map::LinkedHashMap;
 use crate::lexer::data::{Token, TokenMatch};
 
 pub mod error;
 
+/*
 /// Creates a new [`Template`] from a template declaration block.
 pub fn create_template(mut lines: Vec<Vec<TokenMatch>>) -> Result<Template, RequestError> {
     let first = lines.remove(0);
@@ -143,6 +144,7 @@ pub fn multiline_query(instance: Template, lines: Vec<Vec<TokenMatch>>, mutex: &
 // TODO: Should be reworked to feature an ast with dynamic execution. For now this very rigid model works `fine`.
 /// Executes the statements from the query.
 pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Template>, RequestError> {
+    plog!("{:?}", lines);
     let mut output: Vec<Template> = Vec::new();
     for (index, line) in lines.clone().iter().enumerate() {
         let mut iter = line.iter();
@@ -346,11 +348,19 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
 
     Ok(output)
 }
-
+*/
 /// Query the parsed data from memory
 pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, RequestError> {
-    match serde_json::to_string_pretty(&execute_statements(lines)?) {
+    /*match serde_json::to_string_pretty(&execute_statements(lines)?) {
         Ok(value) => Ok(value),
         Err(_) => Err(RequestError::SerializationError),
+    }*/
+    let now = Instant::now();
+    let ast = ast::parse(lines);
+    plog!("AST done in: {:?}", now.elapsed());
+    match ast {
+        Ok(ast) => plog!("\n{}", serde_json::to_string_pretty(&ast).unwrap()),
+        Err(err) => perr!("{:?}", err),
     }
+    todo!()
 }

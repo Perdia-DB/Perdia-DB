@@ -1,27 +1,26 @@
 use std::ops::{Range, Sub};
 
 use regex::Regex;
+use serde::{Serialize, Deserialize};
 
 /// The different Keywords used in PANG
 /// 
 /// It has 19 Tokens in total
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Token {
-    Remove,
     Delete,
-    Then,
+    Select,
     Value,
-    Type,
-    Name,
+    Template,
+    Instance,
     End,
     Create,
     Query,
     Set,
-    Get,
+    From,
     StringType,
     IntegerType,
     FloatType,
-    Starting,
     ENDL,
     Literal,
     Integer,
