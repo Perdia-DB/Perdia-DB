@@ -1,122 +1,165 @@
-use crate::{lexer::data::{Token, TokenMatch}, error::PangError};
+use crate::{lexer::data::{Token}, error::PangError, plog, gr};
 
-use super::Node;
+use super::{Node, snippet::{grammar_rule, RuleSnippet}};
 
+#[derive(Clone)]
 pub struct Rule {
-    start: Token,
-    context: Vec<Token>,
-    ext: Option<Vec<Option<Rule>>>,
-    expanded: bool,
+    snippets: Vec<RuleSnippet>
 }
 
 impl Rule {
-    pub fn check(&self, line: Vec<TokenMatch>) -> Result<(Node, bool), PangError> {
-        todo!()
+    pub fn new() -> Self {
+        let snippets = Self::init_rules();
+        Self {
+            snippets
+        }
     }
-}
 
-pub fn init_rules() -> Vec<Rule> {
-    let mut rules: Vec<Rule> = Vec::new();
+    fn init_rules() -> Vec<RuleSnippet> {
+        let mut rules: Vec<RuleSnippet> = Vec::new();
+        rules.push(gr!("QUERY <$s|TEMPLATE> FROM <TEMPLATE|INSTANCE>"));
+        rules.push(gr!("CREATE $s <TEMPLATE|INSTANCE> &s"));
+        rules.push(gr!("TEMPLATE $s", true));
+        rules.push(gr!("<STRING|INTEGER|FLOAT> $s VALUE <$s|$i|$f>", false, true));
+        rules.push(gr!("<STRING|INTEGER|FLOAT> $s", false, true));
+        rules.push(gr!("SELECT $s", true));
+        rules.push(gr!("SET $s VALUE <$s|$i|$f>", false, true));
+        rules.push(gr!("END $s", false, true));
+        rules.push(gr!("DELETE $s FROM <TEMPLATE|INSTANCE>"));
+        rules
+    }
 
-    // Rule for QUERY
-    rules.push(Rule {
-        start: Token::Query,
-        context: vec![Token::Template, Token::Literal],
-        ext: Some(vec![Some(Rule { 
-                start: Token::From, 
-                context: vec![Token::Template, Token::Instance], 
-                ext: None, expanded: false, })]),
-        expanded: false,
-    });
-    // Rule for DELETE
-    rules.push(Rule {
-        start: Token::Delete,
-        context: vec![Token::Literal],
-        ext: Some(vec![Some(Rule { 
-                start: Token::From, 
-                context: vec![Token::Template, Token::Instance], 
-                ext: None, expanded: false, })]),
-        expanded: false,
-    });
-    // Rule for CREATE
-    rules.push(Rule {
-        start: Token::Create,
-        context: vec![Token::Literal],
-        ext: Some(vec![
-            Some(Rule { 
-                start: Token::Instance, 
-                context: vec![Token::Literal], 
-                ext: None, expanded: false, }), 
-            Some(Rule { 
-                start: Token::Template, 
-                context: vec![Token::Literal], 
-                ext: None, expanded: false, })]),
-        expanded: false,
-    });
-    // Rule for TEMPLATE
-    rules.push(Rule {
-        start: Token::Template,
-        context: vec![Token::Literal],
-        ext: None,
-        expanded: true,
-    });
-    // Rule for SELECT
-    rules.push(Rule {
-        start: Token::Select,
-        context: vec![Token::Literal],
-        ext: None,
-        expanded: true,
-    });
-    // Rule for END
-    rules.push(Rule {
-        start: Token::End,
-        context: vec![Token::Literal],
-        ext: None,
-        expanded: false,
-    });
-    // Rule for SET
-    rules.push(Rule { 
-        start: Token::Set,
-        context: vec![Token::Literal], 
-        ext: Some(vec![Some(Rule { 
-            start: Token::Value,
-            context: vec![Token::Literal, Token::Integer, Token::Float], 
-            ext: None, 
-            expanded: true })]), 
-        expanded: true 
-    });
-    // Rule for STRING
-    rules.push(Rule { 
-        start: Token::StringType,
-        context: vec![Token::Literal], 
-        ext: Some(vec![Some(Rule { 
-            start: Token::Value,
-            context: vec![Token::Literal], 
-            ext: None, 
-            expanded: true }), None]), 
-        expanded: true 
-    });
-    // Rule for INTEGER
-    rules.push(Rule { 
-        start: Token::IntegerType,
-        context: vec![Token::Literal], 
-        ext: Some(vec![Some(Rule { 
-            start: Token::Value,
-            context: vec![Token::Integer], 
-            ext: None, 
-            expanded: true }), None]), 
-        expanded: true 
-    });
-    // Rule for FLOAT
-    rules.push(Rule { 
-        start: Token::FloatType,
-        context: vec![Token::Literal], 
-        ext: Some(vec![Some(Rule { 
-            start: Token::Value,
-            context: vec![Token::Float], 
-            ext: None, 
-            expanded: true }), None]), 
-        expanded: true 
-    });
-    rules
+    pub fn check(&self, ast: &Vec<Node>) -> Result<(), PangError> {
+        for branch in ast {
+            self.check_branch(branch, &self.snippets)?;
+        }
+        Ok(())
+    }
+
+    fn check_branch(&self, branch: &Node, pos: &Vec<RuleSnippet>) -> Result<(), PangError> {
+        match branch {
+            Node::Literal(_, loc) => return Err(PangError::SyntaxError(*loc)),
+            Node::Int(_, loc) => return Err(PangError::SyntaxError(*loc)),
+            Node::Float(_, loc) => return Err(PangError::SyntaxError(*loc)),
+            Node::Token(_, loc) => return Err(PangError::SyntaxError(*loc)),
+            Node::Statement { 
+                variant, 
+                context, 
+                child } => {
+                    // drain valid rules based on variant
+                    let last_pos = Self::get_node_position(variant);
+                    let variant = Self::node_to_token(variant)?;
+                    let pos: Vec<RuleSnippet> = pos.clone()
+                        .drain_filter(|p| {
+                            let p = match p {
+                                RuleSnippet::Statement(s) => s,
+                                _ => return false
+                            };
+                            return match p.get(0).unwrap() {
+                                RuleSnippet::Defined(s) => variant == s.clone(),
+                                RuleSnippet::Tuple(s) => s.contains(&variant),
+                                _ => false
+                            }
+                        }).collect();
+                    plog!("{:?}: {:?}", variant, pos);
+                    if pos.len() == 0 {
+                        return Err(PangError::SyntaxError(last_pos))
+                    }
+                    // drain valid rules based on context
+                    let last_pos = Self::get_node_position(context);
+                    let context = Self::node_to_token(context)?;
+                    let mut pos: Vec<RuleSnippet> = pos.clone()
+                        .drain_filter(|p| {
+                            let p = match p {
+                                RuleSnippet::Statement(s) => s,
+                                _ => return false
+                            };
+                            return match p.get(1).unwrap() {
+                                RuleSnippet::Defined(s) => context == s.clone(),
+                                RuleSnippet::Tuple(s) => s.contains(&context),
+                                _ => false
+                            }
+                        }).collect();
+                    plog!("{:?}: {:?}", context, pos);
+                    if pos.len() == 0 {
+                        return Err(PangError::SyntaxError(last_pos))
+                    }
+                    let mut to_remove: Vec<usize> = Vec::new();
+                    for (index, p) in pos.iter_mut().enumerate() {
+                        let remove =  match p {
+                            RuleSnippet::Statement(s) => {
+                                s.remove(0);
+                                s.remove(0);
+                                s.len() == 0
+                            },
+                            _ => true
+                        };
+                        if remove {
+                            to_remove.push(index);
+                        }
+                    }
+                    for index in to_remove {
+                        pos.remove(index);
+                    }
+                    // Check child
+                    match child {
+                        Some(child) => {
+                            self.check_branch(child, &pos)?
+                        },
+                        None => {
+                            if pos.len() != 0 {
+                                return Err(PangError::SyntaxError(last_pos))
+                            }
+                        },
+                    };
+                },
+            Node::Shell { 
+                outside, 
+                inside } => {
+                    let pos: Vec<RuleSnippet> = pos.clone()
+                        .drain_filter(|p| match p {
+                            RuleSnippet::Expandable(_) => false,
+                            RuleSnippet::Inner(_) => false,
+                            _ => true
+                        }).collect();
+                    let pos_inner: Vec<RuleSnippet> = pos.clone()
+                        .drain_filter(|p| match p {
+                            RuleSnippet::Inner(_) => false,
+                            _ => true
+                        }).collect();
+                    let pos_outside: Vec<RuleSnippet> = pos.clone()
+                        .drain_filter(|p| match p {
+                            RuleSnippet::Expandable(_) => false,
+                            _ => true
+                        }).collect();
+                    self.check_branch(outside, &pos_outside)?;
+                    for statement in inside {
+                        self.check_branch(statement, &pos_inner)?;
+                    }
+                },
+        };
+        Ok(())
+    }
+
+    fn node_to_token(node: &Box<Node>) -> Result<Token, PangError> {
+        match &**node {
+            Node::Literal(_, _) => Ok(Token::Literal),
+            Node::Int(_, _) => Ok(Token::Integer),
+            Node::Float(_, _) => Ok(Token::Float),
+            Node::Token(t, _) => Ok(*t),
+            Node::Statement { variant, context: _, child: _ } => Self::node_to_token(&variant),
+            Node::Shell { outside, inside: _ } => Self::node_to_token(&outside),
+        }
+    }
+
+    fn get_node_position(node: &Box<Node>) -> usize {
+        match &**node {
+            Node::Literal(_, loc) => *loc,
+            Node::Int(_, loc) => *loc,
+            Node::Float(_, loc) => *loc,
+            Node::Token(_, loc) => *loc,
+            Node::Statement { variant, context: _, child: _ } => Self::get_node_position(variant),
+            Node::Shell { outside, inside: _ } => Self::get_node_position(outside),
+        }
+    }
 }

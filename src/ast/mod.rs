@@ -3,9 +3,11 @@ use lazy_static::lazy_static;
 use serde::{Serialize, Deserialize};
 
 mod rule;
+mod snippet;
+mod util;
 
 lazy_static! {
-    pub static ref RULES: Vec<Rule> = rule::init_rules();
+    pub static ref RULE: Rule = Rule::new();
 }
 
 /// Nodes of the AST
@@ -67,6 +69,7 @@ pub fn parse(lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Node>, PangError> {
             ast.push(node);
         }
     }
+    RULE.check(&ast)?;
     Ok(ast)
 }
 
@@ -85,7 +88,7 @@ pub fn parse_node(tms: Vec<TokenMatch>) -> Result<Node, PangError> {
                 context: Box::new(tms.get(1).unwrap().clone().into()),
                 child: Some(Box::new(parse_node(tms.split_at(2).1.to_vec())?)) }
         },
-        _ => {plog!("HERE: {:?}", tms); return Err(PangError::SyntaxError(tms.get(0).unwrap().start))}
+        _ => return Err(PangError::SyntaxError(tms.get(0).unwrap().start))
     };
     Ok(node)
 }
