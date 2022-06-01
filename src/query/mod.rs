@@ -350,7 +350,7 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
 }
 */
 /// Query the parsed data from memory
-pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, RequestError> {
+pub fn data(lines: Vec<Vec<TokenMatch>>) -> String {
     /*match serde_json::to_string_pretty(&execute_statements(lines)?) {
         Ok(value) => Ok(value),
         Err(_) => Err(RequestError::SerializationError),
@@ -360,7 +360,7 @@ pub fn data(lines: Vec<Vec<TokenMatch>>) -> Result<String, RequestError> {
     plog!("AST done in: {:?}", now.elapsed());
     match ast {
         Ok(ast) => plog!("\n{}", serde_json::to_string_pretty(&ast).unwrap()),
-        Err(err) => perr!("{:?}", err),
+        Err(err) => perr!("\n{}", serde_json::to_string_pretty(&err).unwrap()),
     }
     todo!()
 }

@@ -9,44 +9,6 @@ use crate::{lexer, query::{self, error::RequestError}, perr, plog, backup::SaveW
 type Error = Box<dyn std::error::Error + Send + Sync>;
 static BUFFER_SIZE: usize = 1048576;
 
-#[derive(Serialize)]
-struct ErrorResponse {
-    code: u8,
-    description: &'static str,
-}
-
-impl From<RequestError> for ErrorResponse {
-    fn from(err: RequestError) -> Self {
-        match err {
-            RequestError::TemplateNonExistent => ErrorResponse {
-                code: 100,
-                description: "You have tried to create an instance of a template that doesn't currently exist.",
-            },
-            RequestError::TemplateAlreadyExists => ErrorResponse {
-                code: 101,
-                description: "You have tried to create a template that already exists.",
-            },
-            RequestError::InstanceNonExistent => ErrorResponse {
-                code: 200,
-                description: "You have tried to query a instance that doesn't exist.",
-            },
-            RequestError::InstanceAlreadyExists => ErrorResponse {
-                code: 201,
-                description: "You have tried to create a instance that already exists.",
-            },
-            RequestError::SyntaxError => ErrorResponse {
-                code: 10,
-                description: "General syntax error in source.",
-            },
-            RequestError::SerializationError => ErrorResponse {
-                code: 1,
-                description: "Internal db error, failed to serialize to json string.",
-            },
-        }
-    }
-}
-
-
 struct Server {
     listener: TcpListener,
     aes_key: Vec<u8>,
@@ -72,15 +34,8 @@ impl Server {
     }
 
     /// Send serialized data as json-string or send error message.
-    async fn send(&self, stream: &mut TcpStream, data: Result<String, RequestError>) -> Result<(), Error> {
-        let output = match data {
-            Ok(value) => value.into_bytes(),
-            Err(error) => { 
-                let response = serde_json::to_string(&ErrorResponse::from(error)).unwrap();
-                response.into_bytes()
-            },
-        };
-        stream.write(&self.encrypt(output)).await?;
+    async fn send(&self, stream: &mut TcpStream, data: String) -> Result<(), Error> {
+        stream.write(&self.encrypt(data.into_bytes())).await?;
         Ok(())
     }
 
