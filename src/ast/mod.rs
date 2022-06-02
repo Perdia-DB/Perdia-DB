@@ -11,7 +11,7 @@ lazy_static! {
 }
 
 /// Nodes of the AST
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Node {
     Literal(String, usize),
     Int(i64, usize),
@@ -69,6 +69,7 @@ pub fn parse(lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Node>, PangError> {
             ast.push(node);
         }
     }
+    //plog!("\n{}", serde_json::to_string_pretty(&ast).unwrap());
     RULE.check(&ast)?;
     Ok(ast)
 }

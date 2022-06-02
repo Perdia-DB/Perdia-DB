@@ -13,7 +13,7 @@ lazy_static! {
 
 /// Parses a source [`String`] and returns a [`Vec<Vec<TokenMatch>>`] with each outer vector containing a list of TokenMatches, 
 /// which are the Tokens in the lines from the source.
-pub fn parse(mut source: String) -> Vec<Vec<TokenMatch>> {
+pub fn parse(source: String) -> Vec<Vec<TokenMatch>> {
     //source.push_str("\n");
     let mut token_matches: Vec<TokenMatch> = Vec::new();
     TOKEN_DEFINITIONS.iter()

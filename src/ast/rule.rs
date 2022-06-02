@@ -1,4 +1,4 @@
-use crate::{lexer::data::{Token}, error::PangError, plog, gr};
+use crate::{lexer::data::{Token}, error::PangError, gr};
 
 use super::{Node, snippet::{grammar_rule, RuleSnippet}};
 
@@ -53,15 +53,16 @@ impl Rule {
                         .drain_filter(|p| {
                             let p = match p {
                                 RuleSnippet::Statement(s) => s,
+                                RuleSnippet::Expandable(s) => s,
+                                RuleSnippet::Inner(s) => s,
                                 _ => return false
                             };
-                            return match p.get(0).unwrap() {
+                            return match &p[0] {
                                 RuleSnippet::Defined(s) => variant == s.clone(),
                                 RuleSnippet::Tuple(s) => s.contains(&variant),
                                 _ => false
                             }
                         }).collect();
-                    plog!("{:?}: {:?}", variant, pos);
                     if pos.len() == 0 {
                         return Err(PangError::SyntaxError(last_pos))
                     }
@@ -72,6 +73,8 @@ impl Rule {
                         .drain_filter(|p| {
                             let p = match p {
                                 RuleSnippet::Statement(s) => s,
+                                RuleSnippet::Expandable(s) => s,
+                                RuleSnippet::Inner(s) => s,
                                 _ => return false
                             };
                             return match p.get(1).unwrap() {
@@ -80,7 +83,6 @@ impl Rule {
                                 _ => false
                             }
                         }).collect();
-                    plog!("{:?}: {:?}", context, pos);
                     if pos.len() == 0 {
                         return Err(PangError::SyntaxError(last_pos))
                     }
@@ -88,6 +90,16 @@ impl Rule {
                     for (index, p) in pos.iter_mut().enumerate() {
                         let remove =  match p {
                             RuleSnippet::Statement(s) => {
+                                s.remove(0);
+                                s.remove(0);
+                                s.len() == 0
+                            },
+                            RuleSnippet::Expandable(s) => {
+                                s.remove(0);
+                                s.remove(0);
+                                s.len() == 0
+                            },
+                            RuleSnippet::Inner(s) => {
                                 s.remove(0);
                                 s.remove(0);
                                 s.len() == 0
@@ -116,21 +128,22 @@ impl Rule {
             Node::Shell { 
                 outside, 
                 inside } => {
+                    // Drain everything that cannot be expandet
                     let pos: Vec<RuleSnippet> = pos.clone()
                         .drain_filter(|p| match p {
-                            RuleSnippet::Expandable(_) => false,
-                            RuleSnippet::Inner(_) => false,
-                            _ => true
+                            RuleSnippet::Expandable(_) => true,
+                            RuleSnippet::Inner(_) => true,
+                            _ => false
                         }).collect();
                     let pos_inner: Vec<RuleSnippet> = pos.clone()
                         .drain_filter(|p| match p {
-                            RuleSnippet::Inner(_) => false,
-                            _ => true
+                            RuleSnippet::Inner(_) => true,
+                            _ => false
                         }).collect();
                     let pos_outside: Vec<RuleSnippet> = pos.clone()
                         .drain_filter(|p| match p {
-                            RuleSnippet::Expandable(_) => false,
-                            _ => true
+                            RuleSnippet::Expandable(_) => true,
+                            _ => false
                         }).collect();
                     self.check_branch(outside, &pos_outside)?;
                     for statement in inside {

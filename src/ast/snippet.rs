@@ -2,7 +2,7 @@ use std::{iter::Map, collections::HashMap};
 
 use regex::{self, Regex};
 
-use crate::{lexer::data::Token, plog};
+use crate::{lexer::data::Token};
 
 #[derive(Clone, Debug)]
 pub enum RuleSnippet {
@@ -11,32 +11,22 @@ pub enum RuleSnippet {
     Statement(Vec<RuleSnippet>),
     Defined(Token),
     Tuple(Vec<Token>),
-    //Optional(Vec<RuleSnippet>)
 }
 
-pub fn grammar_rule(rule: &str, ex: bool, ie: bool) -> RuleSnippet {
-    //let optional_regex = Regex::new(r#"\[(\[*(?:[^\]\[]*|\[[^\]]*\])*\]*)\]"#).unwrap();
+pub fn grammar_rule(rule: &str, expandable: bool, inner: bool) -> RuleSnippet {
     let tuple_regex = Regex::new(r#"<(<*(?:[^><]*|<[^>]*>)*>*)>"#).unwrap();
     let keyword_regex = Regex::new("([a-zA-Z$]+)").unwrap();
-    if ex {
-        RuleSnippet::Expandable(parse(rule.to_string(), /*&optional_regex,*/ &tuple_regex, &keyword_regex))
-    } else if ie {
-        RuleSnippet::Inner(parse(rule.to_string(), /*&optional_regex,*/ &tuple_regex, &keyword_regex))
+    if expandable {
+        RuleSnippet::Expandable(parse(rule.to_string(), &tuple_regex, &keyword_regex))
+    } else if inner {
+        RuleSnippet::Inner(parse(rule.to_string(), &tuple_regex, &keyword_regex))
     } else {
-        RuleSnippet::Statement(parse(rule.to_string(), /*&optional_regex,*/ &tuple_regex, &keyword_regex))
+        RuleSnippet::Statement(parse(rule.to_string(), &tuple_regex, &keyword_regex))
     }
 }
 
 fn parse(mut rule: String, /*optional_regex: &Regex,*/ tuple_regex: &Regex, keyword_regex: &Regex) -> Vec<RuleSnippet> {
     let mut map: HashMap<usize, RuleSnippet> = HashMap::new();
-    // take care of optionals
-    /*for cap in optional_regex.captures_iter(&rule) {
-        let index = cap.get(1).unwrap().start();
-        let optional = parse((&cap[1]).to_string(), &optional_regex, &tuple_regex, &keyword_regex);
-        map.insert(index, RuleSnippet::Optional(optional));
-    }
-    rule = (&*optional_regex.replace_all(&rule, "")).to_string();*/
-
     // tuples
     for cap in tuple_regex.captures_iter(&rule) {
         let index = cap.get(0).unwrap().start();
