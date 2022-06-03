@@ -57,13 +57,17 @@ impl TemplateBuilder {
     }
 
     fn with(&self, name: String, data: DataUnion, data_type: DataType) -> Self {
-        let value = Data { data_type, data };
-        let mut data = self.data.clone().unwrap_or_default();
-        data.insert(name, value);
+        let data = Data { data_type, data };
+        self.with_data(name, data)
+    }
+
+    pub fn with_data(&self, name: String, data: Data) -> Self {
+        let mut map = self.data.clone().unwrap_or_default();
+        map.insert(name, data);
         Self {
             template: self.template.clone(),
             instance: self.instance.clone(),
-            data: Some(data),
+            data: Some(map),
         }
     }
 

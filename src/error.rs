@@ -7,6 +7,7 @@ pub enum PangError {
     InstanceNonExistent(usize),
     TemplateAlreadyExists(usize),
     TemplateNonExistent(usize),
+    TypeMismatch(usize),
 }
 
 impl PangError {
@@ -18,6 +19,7 @@ impl PangError {
             PangError::InstanceNonExistent(_) => "InstanceNonExistent",
             PangError::TemplateAlreadyExists(_) => "TemplateAlreadyExists",
             PangError::TemplateNonExistent(_) => "TemplateNonExistent",
+            PangError::TypeMismatch(_) => "TypeMismatch",
         }
     }
 
@@ -28,6 +30,7 @@ impl PangError {
             PangError::InstanceNonExistent(loc) => *loc,
             PangError::TemplateAlreadyExists(loc) => *loc,
             PangError::TemplateNonExistent(loc) => *loc,
+            PangError::TypeMismatch(loc) => *loc,
         }
     }
 

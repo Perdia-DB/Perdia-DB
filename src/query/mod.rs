@@ -1,6 +1,6 @@
 use std::{sync::MutexGuard, time::Instant};
 
-use crate::{data::{template::Template, TEMPLATES, INSTANCES, serialization::Data}, plog, ast, perr};
+use crate::{data::{template::Template, TEMPLATES, INSTANCES, serialization::{Data, DataType}}, plog, ast::{self, Node}, perr, error::PangError};
 use error::RequestError;
 use linked_hash_map::LinkedHashMap;
 use crate::lexer::data::{Token, TokenMatch};
@@ -349,6 +349,157 @@ pub fn execute_statements(mut lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Templat
     Ok(output)
 }
 */
+
+fn exec(ast: Vec<Node>) -> Result<String, PangError> {
+
+    for branch in ast {
+        exec_branch(branch)
+    }
+
+    Ok("".to_string())
+}
+
+fn exec_branch(branch: Node) {
+    match branch {
+        Node::Literal(_, _) => todo!(),
+        Node::Int(_, _) => todo!(),
+        Node::Float(_, _) => todo!(),
+        Node::Token(_, _) => todo!(),
+        Node::Statement { variant, context, child } => todo!(),
+        Node::Shell { outside, inside } => todo!(),
+    }
+}
+
+/// Creates a Variable from the Inside branch of a Template Shell
+fn create_prop(prop: Node) -> Result<(String, Data), PangError> {
+    // Check if node is statement
+    match prop {
+        Node::Literal(_, loc) => Err(PangError::SyntaxError(loc)),
+        Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
+        Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
+        Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
+        Node::Shell { outside, inside } => {
+            create_prop(*outside)
+        },
+        Node::Statement { variant, context, child } => {
+            // What DataType to expect
+            let data_type: DataType = match *variant {
+                Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
+                Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
+                Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
+                Node::Shell { outside, inside } => {
+                    return create_prop(*outside)
+                },
+                Node::Statement { variant, context, child } => {
+                    return create_prop(*variant)
+                },
+
+                Node::Token(token, loc) => match token {
+                    Token::StringType => DataType::STRING,
+                    Token::IntegerType => DataType::INTEGER,
+                    Token::FloatType => DataType::FLOAT,
+                    _ => return Err(PangError::SyntaxError(loc))
+                },
+            };
+
+            // Name of the field
+            let name: String = match *context {
+                Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
+                Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
+                Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
+                Node::Shell { outside, inside } => {
+                    return create_prop(*outside)
+                },
+                Node::Statement { variant, context, child } => {
+                    return create_prop(*variant)
+                },
+                Node::Literal(string, _) => Ok(string),
+            }?;
+
+            // Actual data check if starting value is given
+            let data: Data = match child {
+                Some(child) => {
+                    // Verify that child is a statement
+                    match *child {
+                        Node::Literal(_, loc) => Err(PangError::SyntaxError(loc)),
+                        Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
+                        Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
+                        Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
+                        Node::Shell { outside, inside } => {
+                            return create_prop(*outside)
+                        },
+                        Node::Statement { variant, context, child } => {
+                            // Validate, that variant is VALUE
+                            match *variant {
+                                Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
+                                Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
+                                Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
+                                Node::Shell { outside, inside } => {
+                                    return create_prop(*outside)
+                                },
+                                Node::Statement { variant, context, child } => {
+                                    return create_prop(*variant)
+                                },
+                
+                                Node::Token(token, loc) => match token {
+                                    Token::Value => {}
+                                    _ => return Err(PangError::SyntaxError(loc))
+                                },
+                            };
+                            
+                            // If child is something throw it out the window
+                            if child.is_some() {
+                                return create_prop(*child.unwrap())
+                            }
+
+                            // Validate value
+                            let data: (Data, usize) = match *context {
+                                Node::Token(_, loc) => return Err(PangError::SyntaxError(loc)),
+                                Node::Shell { outside, inside } => {
+                                    return create_prop(*outside)
+                                },
+                                Node::Statement { variant, context, child } => {
+                                    return create_prop(*variant)
+                                },
+                                Node::Literal(string, loc) => (string.into(), loc),
+                                Node::Int(int, loc) => (int.into(), loc),
+                                Node::Float(float, loc) => (float.into(), loc),
+                            };
+
+                            // Validate types
+                            if data_type != data.0.data_type {
+                                return Err(PangError::TypeMismatch(data.1))
+                            }
+
+                            Ok(data.0)
+                        },
+                    }?;
+
+                    todo!()
+                },
+                None => match data_type {
+                    DataType::STRING => "".into(),
+                    DataType::INTEGER => 0.into(),
+                    DataType::FLOAT => 0.0.into(),
+                },
+            };
+
+            return Ok((name, data))
+        },
+    }
+}
+
+
+/// Creates a template from a branch
+fn create_template(name: String, properties: Vec<Node>) -> Result<(), PangError> {
+    let template = Template::new(name);
+    for prop in properties {
+        let (name, data) = create_prop(prop)?;
+        template.with_data(name, data);
+    }
+    Ok(())
+}
+
 /// Query the parsed data from memory
 pub fn data(lines: Vec<Vec<TokenMatch>>) -> String {
     /*match serde_json::to_string_pretty(&execute_statements(lines)?) {
@@ -359,8 +510,10 @@ pub fn data(lines: Vec<Vec<TokenMatch>>) -> String {
     let ast = ast::parse(lines);
     plog!("AST done in: {:?}", now.elapsed());
     match ast {
-        Ok(ast) => plog!("\n{}", serde_json::to_string_pretty(&ast).unwrap()),
-        Err(err) => perr!("\n{}", serde_json::to_string_pretty(&err).unwrap()),
+        Ok(ast) => match exec(ast) {
+            Ok(res) => res,
+            Err(err) => serde_json::to_string_pretty(&err).unwrap(),
+        },
+        Err(err) => serde_json::to_string_pretty(&err).unwrap(),
     }
-    todo!()
 }
