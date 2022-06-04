@@ -1,4 +1,4 @@
-use std::{iter::Map, collections::HashMap};
+use std::{collections::HashMap};
 
 use regex::{self, Regex};
 

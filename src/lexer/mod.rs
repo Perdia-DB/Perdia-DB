@@ -1,8 +1,6 @@
 use lazy_static::lazy_static;
 use data::{Token, TokenMatch, TokenDefinition};
 
-use crate::plog;
-
 pub mod data;
 pub mod tokens;
 

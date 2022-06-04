@@ -1,5 +1,3 @@
-use std::sync::{Mutex, Arc};
-
 use crate::{data::{INSTANCES, structure::{Instance, Template}, TEMPLATES}, error::PangError};
 
 /// Pushes a [`Template`] to the static [`TEMPLATES`] mutex

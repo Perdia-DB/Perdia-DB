@@ -9,6 +9,7 @@ pub enum PangError {
     TemplateNonExistent(String, usize),
     TypeMismatch(usize),
     DataNonExistent(usize),
+    ExecutionError,
 }
 
 impl PangError {
@@ -16,7 +17,8 @@ impl PangError {
     /// Detailed description of the error.
     pub fn desc<'a>(&'a self) -> String {
         match self {
-            PangError::SyntaxError(_) => "SyntaxError".to_string(),
+            PangError::ExecutionError => "Something unexpected went wrong during execution :/".to_string(),
+            PangError::SyntaxError(_) => "Syntax error occurred".to_string(),
             PangError::InstanceAlreadyExists(name, _) => 
                 format!("Instance {} already exists.", name).to_string(),
             PangError::InstanceNonExistent(name, _) => 
@@ -33,6 +35,7 @@ impl PangError {
     /// Location where the error occurred.
     pub fn loc(&self) -> usize {
         match self {
+            PangError::ExecutionError => usize::MAX,
             PangError::SyntaxError(loc) => *loc,
             PangError::InstanceAlreadyExists(_, loc) => *loc,
             PangError::InstanceNonExistent(_, loc) => *loc,
@@ -45,6 +48,7 @@ impl PangError {
 
     pub fn code(&self) -> usize {
         match self {
+            PangError::ExecutionError => 0b0000,
             PangError::SyntaxError(_) => 0b1111,
             PangError::InstanceAlreadyExists(_, _) => 0b0101,
             PangError::InstanceNonExistent(_, _) => 0b0110,

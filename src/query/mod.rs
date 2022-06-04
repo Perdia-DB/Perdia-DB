@@ -4,10 +4,11 @@ use crate::{data::{structure::{Template, Instance}, TEMPLATES, INSTANCES, serial
 use linked_hash_map::LinkedHashMap;
 use crate::lexer::data::{Token, TokenMatch};
 
-use self::backend::{push_template, remove_instance, push_instance};
+use self::{backend::{push_template, remove_instance, push_instance}, prop::{create_template_prop, create_select_prop}};
 
 pub mod error;
 mod backend;
+mod prop;
 
 enum QueryResult {
     Template(Template),
@@ -25,285 +26,55 @@ fn exec(ast: Vec<Node>) -> Result<String, PangError> {
 
 fn exec_branch(branch: Node) -> Result<Option<QueryResult>, PangError> {
     match branch {
-        Node::Literal(_, _) => todo!(),
-        Node::Int(_, _) => todo!(),
-        Node::Float(_, _) => todo!(),
-        Node::Token(_, _) => todo!(),
-        Node::Statement { variant, context, child } => todo!(),
-        Node::Shell { outside, inside } => {
-            let (token, name) = match *outside {
-                Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
-                Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
-                Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
-                Node::Token(_, loc) => return Err(PangError::SyntaxError(loc)),
-                Node::Shell { outside, inside } => {
-                    return exec_branch(*outside)
-                },
-                Node::Statement { variant, context, child } => {
-                    let (token, token_loc) = match *variant {
-                        Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
-                        Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
-                        Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
-                        Node::Token(token, loc) => (token, loc),
-                        Node::Statement { variant, context, child } => {
-                            return exec_branch(*variant)
-                        },
-                        Node::Shell { outside, inside } => {
-                            return exec_branch(*outside)
-                        },
-                    };
-                },
-            };
+        Node::Statement { variant, context, child } => {
+
         },
+        Node::Shell { outside, inside } => {
+            let (token, name, loc) = match *outside {
+                Node::Statement { variant, context, child } => {
+                    // Token
+                    let (token, loc) = match *variant {
+                        Node::Token(token, loc) => (token, loc),
+                        _ => return Err(PangError::ExecutionError),
+                    };
+                    // Name
+                    let name = match *context {
+                        Node::Literal(name, _) => name,
+                        _ => return Err(PangError::ExecutionError),
+                    };
+                    (token, name, loc)
+                },
+                _ => return Err(PangError::ExecutionError),
+            };
+            
+            match token {
+                Token::Select => make_selection(name, inside, loc)?,
+                Token::Template => create_template(name, inside, loc)?,
+                _ => return Err(PangError::ExecutionError),
+            }
+        },
+        _ => return Err(PangError::ExecutionError),
     }
 
     todo!()
 }
 
-/// Creates a Variable from the Inside branch of a Template Shell
-fn create_template_prop(prop: Node) -> Result<(String, Data), PangError> {
-    // Check if node is statement
-    match prop {
-        Node::Literal(_, loc) => Err(PangError::SyntaxError(loc)),
-        Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
-        Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
-        Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
-        Node::Shell { outside, inside } => {
-            create_template_prop(*outside)
-        },
-        Node::Statement { variant, context, child } => {
-            // What DataType to expect
-            let data_type: DataType = match *variant {
-                Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
-                Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
-                Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
-                Node::Shell { outside, inside } => {
-                    return create_template_prop(*outside)
-                },
-                Node::Statement { variant, context, child } => {
-                    return create_template_prop(*variant)
-                },
-
-                Node::Token(token, loc) => match token {
-                    Token::StringType => DataType::STRING,
-                    Token::IntegerType => DataType::INTEGER,
-                    Token::FloatType => DataType::FLOAT,
-                    _ => return Err(PangError::SyntaxError(loc))
-                },
-            };
-
-            // Name of the field
-            let name: String = match *context {
-                Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
-                Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
-                Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
-                Node::Shell { outside, inside } => {
-                    return create_template_prop(*outside)
-                },
-                Node::Statement { variant, context, child } => {
-                    return create_template_prop(*variant)
-                },
-                Node::Literal(string, _) => Ok(string),
-            }?;
-
-            // Actual data check if starting value is given
-            let data: Data = match child {
-                Some(child) => {
-                    // Verify that child is a statement
-                    match *child {
-                        Node::Literal(_, loc) => Err(PangError::SyntaxError(loc)),
-                        Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
-                        Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
-                        Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
-                        Node::Shell { outside, inside } => {
-                            return create_template_prop(*outside)
-                        },
-                        Node::Statement { variant, context, child } => {
-                            // Validate, that variant is VALUE
-                            match *variant {
-                                Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
-                                Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
-                                Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
-                                Node::Shell { outside, inside } => {
-                                    return create_template_prop(*outside)
-                                },
-                                Node::Statement { variant, context, child } => {
-                                    return create_template_prop(*variant)
-                                },
-                
-                                Node::Token(token, loc) => match token {
-                                    Token::Value => {}
-                                    _ => return Err(PangError::SyntaxError(loc))
-                                },
-                            };
-                            
-                            // If child is something throw it out the window
-                            if child.is_some() {
-                                return create_template_prop(*child.unwrap())
-                            }
-
-                            // Validate value
-                            let data: (Data, usize) = match *context {
-                                Node::Token(_, loc) => return Err(PangError::SyntaxError(loc)),
-                                Node::Shell { outside, inside } => {
-                                    return create_template_prop(*outside)
-                                },
-                                Node::Statement { variant, context, child } => {
-                                    return create_template_prop(*variant)
-                                },
-                                Node::Literal(string, loc) => (string.into(), loc),
-                                Node::Int(int, loc) => (int.into(), loc),
-                                Node::Float(float, loc) => (float.into(), loc),
-                            };
-
-                            // Validate types
-                            if data_type != data.0.data_type {
-                                return Err(PangError::TypeMismatch(data.1))
-                            }
-
-                            Ok(data.0)
-                        },
-                    }?;
-
-                    todo!()
-                },
-                None => match data_type {
-                    DataType::STRING => "".into(),
-                    DataType::INTEGER => 0.into(),
-                    DataType::FLOAT => 0.0.into(),
-                },
-            };
-
-            return Ok((name, data))
-        },
-    }
-}
-
 /// Creates a template from a branch
-fn create_template(name: String, properties: Vec<Node>, loc: usize) -> Result<(), PangError> {
+fn create_template(name: String, properties: Vec<Box<Node>>, loc: usize) -> Result<(), PangError> {
     let template = Template::new(name);
     for prop in properties {
-        let (name, data) = create_template_prop(prop)?;
+        let (name, data) = create_template_prop(*prop)?;
         template.add_data(name, data);
     }
     push_template(template.build(), loc)?;
     Ok(())
 }
 
-/// Creates a Variable from the Inside branch of a Select Shell
-fn create_select_prop(prop: Node) -> Result<(String, (Data, usize)), PangError> {
-   // Check if node is statement
-   match prop {
-    Node::Literal(_, loc) => Err(PangError::SyntaxError(loc)),
-    Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
-    Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
-    Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
-    Node::Shell { outside, inside } => {
-        create_select_prop(*outside)
-    },
-    Node::Statement { variant, context, child } => {
-        // Check if Set token is present
-        match *variant {
-            Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
-            Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
-            Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
-            Node::Shell { outside, inside } => {
-                return create_select_prop(*outside)
-            },
-            Node::Statement { variant, context, child } => {
-                return create_select_prop(*variant)
-            },
-
-            Node::Token(token, loc) => match token {
-                Token::Set => {},
-                _ => return Err(PangError::SyntaxError(loc))
-            },
-        };
-
-        // Name of the field
-        let (name, loc) = match *context {
-            Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
-            Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
-            Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
-            Node::Shell { outside, inside } => {
-                return create_select_prop(*outside)
-            },
-            Node::Statement { variant, context, child } => {
-                return create_select_prop(*variant)
-            },
-            Node::Literal(string, loc) => Ok((string, loc)),
-        }?;
-
-        // Actual data check if starting value is given
-        let data = match child {
-            Some(child) => {
-                // Verify that child is a statement
-                match *child {
-                    Node::Literal(_, loc) => Err(PangError::SyntaxError(loc)),
-                    Node::Int(_, loc) => Err(PangError::SyntaxError(loc)),
-                    Node::Float(_, loc) => Err(PangError::SyntaxError(loc)),
-                    Node::Token(_, loc) => Err(PangError::SyntaxError(loc)),
-                    Node::Shell { outside, inside } => {
-                        return create_select_prop(*outside)
-                    },
-                    Node::Statement { variant, context, child } => {
-                        // Validate, that variant is VALUE
-                        match *variant {
-                            Node::Literal(_, loc) => return Err(PangError::SyntaxError(loc)),
-                            Node::Int(_, loc) => return Err(PangError::SyntaxError(loc)),
-                            Node::Float(_, loc) => return Err(PangError::SyntaxError(loc)),
-                            Node::Shell { outside, inside } => {
-                                return create_select_prop(*outside)
-                            },
-                            Node::Statement { variant, context, child } => {
-                                return create_select_prop(*variant)
-                            },
-            
-                            Node::Token(token, loc) => match token {
-                                // Validate VALUE token
-                                Token::Value => {}
-                                _ => return Err(PangError::SyntaxError(loc))
-                            },
-                        };
-                        
-                        // If child is something throw it out the window
-                        if child.is_some() {
-                            return create_select_prop(*child.unwrap())
-                        }
-
-                        // Validate value
-                        let data: (Data, usize) = match *context {
-                            Node::Token(_, loc) => return Err(PangError::SyntaxError(loc)),
-                            Node::Shell { outside, inside } => {
-                                return create_select_prop(*outside)
-                            },
-                            Node::Statement { variant, context, child } => {
-                                return create_select_prop(*variant)
-                            },
-                            Node::Literal(string, loc) => (string.into(), loc),
-                            Node::Int(int, loc) => (int.into(), loc),
-                            Node::Float(float, loc) => (float.into(), loc),
-                        };
-
-                        Ok(data)
-                    },
-                }?;
-
-                todo!()
-            },
-            None => return Err(PangError::SyntaxError(loc + name.len() + 3)),
-        };
-
-        return Ok((name, data))
-    },
-}
-}
-
 /// Makes the instances selection and overwrites the values
-fn make_selection(name: String, properties: Vec<Node>, loc: usize) -> Result<(), PangError> {
+fn make_selection(name: String, properties: Vec<Box<Node>>, loc: usize) -> Result<(), PangError> {
     let mut instance = remove_instance(name, loc)?;
     for prop in properties {
-        let (name, (data, loc)) = create_select_prop(prop)?;
+        let (name, (data, loc)) = create_select_prop(*prop)?;
         instance.overwrite(name, data, loc)?;
     }
     push_instance(instance, loc)?;
@@ -313,13 +84,54 @@ fn make_selection(name: String, properties: Vec<Node>, loc: usize) -> Result<(),
 /// Queries the data from the backend
 fn query_statement(context: Node, child: Option<Box<Node>>, loc: usize) -> Result<QueryResult, PangError> {
     
-    
     todo!()
 }
 
 /// Makes a Instance or Template entry in the backend
 fn create_statement(context: Node, child: Option<Box<Node>>, loc: usize) -> Result<(), PangError> {
+    let name = match context {
+        Node::Literal(name, _) => Ok(name),
+        _ => Err(PangError::ExecutionError),
+    }?;
+    match child {
+        Some(child) => match *child {
+            Node::Statement { variant, context, child: _ } => {
+                let context = match *context {
+                    Node::Literal(context, _) => Ok(context),
+                    _ => Err(PangError::ExecutionError),
+                }?;
+                match *variant {
+                    Node::Token(token, _) => match token {
+                        Token::Template => {
+                            let template = backend::copy_template(context, loc)?;
+                            let instance = Instance::new(name, template);
+                            backend::push_instance(instance, loc)?;
+                            Ok(())
+                        },
+                        Token::Instance => {
+                            let origin = backend::copy_instance(context, loc)?;
+                            let mut instance = Instance::new(name, origin.template);
+                            instance.data = origin.data;
+                            backend::push_instance(instance, loc)?;
+                            Ok(())
+                        },
+                        _ => Err(PangError::ExecutionError),
+                    },
+                    _ => Err(PangError::ExecutionError),
+                }?;
+                Ok(())
+            },
+            _ => Err(PangError::ExecutionError),
+        },
+        None => Err(PangError::ExecutionError),
+    }?;
     Ok(())
+}
+
+/// Deletes data from the backend
+fn delete_statement(context: Node, child: Option<Box<Node>>, loc: usize) -> Result<QueryResult, PangError> {
+    
+    todo!()
 }
 
 /// Query the parsed data from memory

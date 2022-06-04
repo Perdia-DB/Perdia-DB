@@ -1,4 +1,4 @@
-use crate::{lexer::data::{TokenMatch, Token}, error::PangError, ast::rule::Rule, plog};
+use crate::{lexer::data::{TokenMatch, Token}, error::PangError, ast::rule::Rule};
 use lazy_static::lazy_static;
 use serde::{Serialize, Deserialize};
 
@@ -96,8 +96,8 @@ pub fn parse_node(tms: Vec<TokenMatch>) -> Result<Node, PangError> {
 /// Check if statement has lines that follow that are related to it.
 pub fn is_shell_or_end(node: &Node) -> bool {
     match node {
-        Node::Statement { variant, context, child } => match **variant {
-                Node::Token(token, loc) => match token {
+        Node::Statement { variant, context: _, child: _ } => match **variant {
+                Node::Token(token, _loc) => match token {
                     Token::Select => true,
                     Token::Template => true,
                     Token::End => true,

@@ -1,9 +1,9 @@
 use linked_hash_map::LinkedHashMap;
-use serde::{Serialize, Deserialize, de::Visitor};
+use serde::{Serialize, Deserialize};
 
 use crate::error::PangError;
 
-use super::serialization::{Data, DataType, DataUnion};
+use super::serialization::{Data};
 
 /// The core structure of the in-memory values.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
