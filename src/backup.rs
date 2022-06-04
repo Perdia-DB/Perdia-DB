@@ -1,6 +1,6 @@
 use std::{sync::{Arc, Mutex, mpsc::{self, Receiver, Sender}, atomic::{AtomicBool, Ordering}}, thread::{self, JoinHandle}, time::{Duration, Instant}};
 use lazy_static::lazy_static;
-use crate::{data::{INSTANCES, TEMPLATES, template::Template}, plog, pwarn, perr};
+use crate::{data::{INSTANCES, TEMPLATES, structure::{Template, Instance}}, plog, pwarn, perr};
 
 lazy_static! {
     static ref SAVE_DIR: String = std::env::var("DIR").unwrap_or("./backup/".to_string());
@@ -39,7 +39,7 @@ impl SaveWorker {
 
         match instances_res {
             Ok(json_string) => {
-                match serde_json::from_str::<Vec<Template>>(&json_string) {
+                match serde_json::from_str::<Vec<Instance>>(&json_string) {
                     Ok(instances) => {
                         let mut mutex = INSTANCES.lock().unwrap();
                         *mutex = instances;

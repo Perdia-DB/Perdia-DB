@@ -69,7 +69,6 @@ pub fn parse(lines: Vec<Vec<TokenMatch>>) -> Result<Vec<Node>, PangError> {
             ast.push(node);
         }
     }
-    //plog!("\n{}", serde_json::to_string_pretty(&ast).unwrap());
     RULE.check(&ast)?;
     Ok(ast)
 }

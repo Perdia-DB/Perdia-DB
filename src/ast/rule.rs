@@ -128,7 +128,7 @@ impl Rule {
             Node::Shell { 
                 outside, 
                 inside } => {
-                    // Drain everything that cannot be expandet
+                    // Drain everything that cannot be expanded
                     let pos: Vec<RuleSnippet> = pos.clone()
                         .drain_filter(|p| match p {
                             RuleSnippet::Expandable(_) => true,
