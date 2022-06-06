@@ -1,10 +1,8 @@
-use std::future::Future;
+use std::{future::Future, time::Instant};
 
-use aes::{Aes256, cipher::{KeyInit, generic_array::GenericArray}, Aes128};
-use serde::Serialize;
-use tokio::{net::{TcpListener, TcpStream}, io::{Interest, AsyncWriteExt}};
+use tokio::{net::{TcpListener, TcpStream}, io::{AsyncWriteExt}};
 
-use crate::{lexer, query::{self, error::RequestError}, perr, plog, backup::SaveWorker, crypto::Key, pwarn};
+use crate::{lexer, query::{self}, perr, plog, backup::SaveWorker, crypto::Key};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 static BUFFER_SIZE: usize = 1048576;
@@ -26,7 +24,9 @@ impl Server {
         let source = String::from_utf8(data)?;
         // Removing trailing padding 0's from decrypted query
         let source = source.trim_matches(char::from(0)).to_string();
+        let now = Instant::now();
         let result = query::data(lexer::parse(source));
+        plog!("Execution done in: {:?}", now.elapsed());
         self.send(stream, result).await?;
 
         stream.shutdown().await?;
@@ -52,7 +52,7 @@ impl Server {
     /// Process incoming requests in a loop.
     async fn run(&mut self) -> Result<(), Error> {
         loop {
-            let (mut stream, addr) = self.listener.accept().await?;
+            let (mut stream, _) = self.listener.accept().await?;
             self.process(&mut stream).await?;
         }
     }

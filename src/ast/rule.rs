@@ -17,11 +17,12 @@ impl Rule {
 
     fn init_rules() -> Vec<RuleSnippet> {
         let mut rules: Vec<RuleSnippet> = Vec::new();
-        rules.push(gr!("QUERY <$s|TEMPLATE> FROM <TEMPLATE|INSTANCE>"));
-        rules.push(gr!("CREATE $s <TEMPLATE|INSTANCE> &s"));
+        rules.push(gr!("QUERY <INSTANCE|TEMPLATE>"));
+        rules.push(gr!("QUERY $s FROM <TEMPLATE|INSTANCE>"));
+        rules.push(gr!("CREATE $s <TEMPLATE|INSTANCE> $s"));
         rules.push(gr!("TEMPLATE $s", true));
-        rules.push(gr!("<STRING|INTEGER|FLOAT> $s VALUE <$s|$i|$f>", false, true));
         rules.push(gr!("<STRING|INTEGER|FLOAT> $s", false, true));
+        rules.push(gr!("<STRING|INTEGER|FLOAT> $s VALUE <$s|$i|$f>", false, true));
         rules.push(gr!("SELECT $s", true));
         rules.push(gr!("SET $s VALUE <$s|$i|$f>", false, true));
         rules.push(gr!("END $s", false, true));
@@ -110,9 +111,9 @@ impl Rule {
                             to_remove.push(index);
                         }
                     }
-                    for index in to_remove {
-                        pos.remove(index);
-                    }
+                    pos = pos.iter().enumerate().filter(|(index, _)| {
+                        !to_remove.contains(index)
+                    }).map(|(_, e)| e.clone()).collect();
                     // Check child
                     match child {
                         Some(child) => {

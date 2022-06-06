@@ -70,12 +70,13 @@ impl TemplateBuilder {
         }
     }
 
-    pub fn add_data(&self, name: String, data: Data) -> Self {
+    pub fn add_data(&mut self, name: String, data: Data) -> Self {
         let mut map = self.data.clone().unwrap_or_default();
         map.insert(name, data);
+        self.data = Some(map);
         Self {
             name: self.name.clone(),
-            data: Some(map),
+            data: self.data.clone(),
         }
     }
 }

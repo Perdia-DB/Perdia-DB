@@ -58,9 +58,7 @@ pub fn create_template_prop(prop: Node) -> Result<(String, Data), PangError> {
                             Ok(data.0)
                         },
                         _ => return Err(PangError::ExecutionError),
-                    }?;
-
-                    todo!()
+                    }?
                 },
                 None => match data_type {
                     DataType::STRING => "".into(),

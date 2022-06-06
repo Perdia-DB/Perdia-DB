@@ -1,37 +1,67 @@
-use std::{sync::MutexGuard, time::Instant};
-
-use crate::{data::{structure::{Template, Instance}, TEMPLATES, INSTANCES, serialization::{Data, DataType}}, plog, ast::{self, Node}, perr, error::PangError};
-use linked_hash_map::LinkedHashMap;
+use crate::{data::{structure::{Template, Instance}}, ast::{self, Node}, error::PangError};
+use serde::{Serialize, Deserialize};
 use crate::lexer::data::{Token, TokenMatch};
 
 use self::{backend::{push_template, remove_instance, push_instance}, prop::{create_template_prop, create_select_prop}};
 
-pub mod error;
 mod backend;
 mod prop;
 
+#[derive(Serialize, Deserialize)]
 enum QueryResult {
     Template(Template),
     Instance(Instance),
 }
 
-fn exec(ast: Vec<Node>) -> Result<String, PangError> {
-
-    for branch in ast {
-        exec_branch(branch)?;
+impl From<Instance> for QueryResult {
+    fn from(v: Instance) -> Self {
+        QueryResult::Instance(v)
     }
-
-    Ok("".to_string())
 }
 
-fn exec_branch(branch: Node) -> Result<Option<QueryResult>, PangError> {
+impl From<Template> for QueryResult {
+    fn from(v: Template) -> Self {
+        QueryResult::Template(v)
+    }
+}
+
+fn exec(ast: Vec<Node>) -> Result<String, PangError> {
+    let mut res = Vec::new();
+    for branch in ast {
+        match exec_branch(branch) {
+            Ok(value) => match value {
+                Some(value) => res.push(value),
+                None => {},
+            },
+            Err(e) => return Err(e),
+        }
+    }
+
+    match serde_json::to_string_pretty(&res) {
+        Ok(out) => Ok(out),
+        Err(_) => Err(PangError::ExecutionError),
+    }
+}
+
+fn exec_branch(branch: Node) -> Result<Option<Vec<QueryResult>>, PangError> {
     match branch {
         Node::Statement { variant, context, child } => {
-
+            match *variant {
+                Node::Token(token, loc) => match token {
+                    Token::Query => return Ok(Some(query_statement(*context, child, loc)?)),
+                    Token::Create => { 
+                        create_statement(*context, child, loc)?; 
+                        Ok(None)
+                    },
+                    Token::Delete => return Ok(Some(delete_statement(*context, child, loc)?)),
+                    _ => return Err(PangError::ExecutionError),
+                },
+                _ => return Err(PangError::ExecutionError),
+            }
         },
         Node::Shell { outside, inside } => {
             let (token, name, loc) = match *outside {
-                Node::Statement { variant, context, child } => {
+                Node::Statement { variant, context, child: _} => {
                     // Token
                     let (token, loc) = match *variant {
                         Node::Token(token, loc) => (token, loc),
@@ -48,20 +78,24 @@ fn exec_branch(branch: Node) -> Result<Option<QueryResult>, PangError> {
             };
             
             match token {
-                Token::Select => make_selection(name, inside, loc)?,
-                Token::Template => create_template(name, inside, loc)?,
+                Token::Select => {
+                    make_selection(name, inside, loc)?;
+                    Ok(None)
+                },
+                Token::Template => { 
+                    create_template(name, inside, loc)?;
+                    Ok(None)
+                },
                 _ => return Err(PangError::ExecutionError),
             }
         },
         _ => return Err(PangError::ExecutionError),
     }
-
-    todo!()
 }
 
 /// Creates a template from a branch
 fn create_template(name: String, properties: Vec<Box<Node>>, loc: usize) -> Result<(), PangError> {
-    let template = Template::new(name);
+    let mut template = Template::new(name);
     for prop in properties {
         let (name, data) = create_template_prop(*prop)?;
         template.add_data(name, data);
@@ -82,9 +116,40 @@ fn make_selection(name: String, properties: Vec<Box<Node>>, loc: usize) -> Resul
 }
 
 /// Queries the data from the backend
-fn query_statement(context: Node, child: Option<Box<Node>>, loc: usize) -> Result<QueryResult, PangError> {
-    
-    todo!()
+fn query_statement(context: Node, child: Option<Box<Node>>, _loc: usize) -> Result<Vec<QueryResult>, PangError> {
+    let name = match context {
+        Node::Literal(name, _) => Ok(name),
+        Node::Token(token, _) => match token {
+            Token::Instance => {
+                return Ok(backend::copy_instances().iter().map(|e| e.clone().into()).collect())
+            },
+            Token::Template => {
+                return Ok(backend::copy_templates().iter().map(|e| e.clone().into()).collect())
+            },
+            _ => Err(PangError::ExecutionError)
+        }
+        _ => Err(PangError::ExecutionError),
+    }?;
+    match child {
+        Some(child) => match *child {
+            Node::Statement { variant: _, context, child: _ } => {
+                match *context {
+                    Node::Token(token, loc) => match token {
+                        Token::Template => {
+                            Ok(vec![backend::copy_template(name, loc)?.into()])
+                        }
+                        Token::Instance => {
+                            Ok(vec![backend::copy_instance(name, loc)?.into()])
+                        }
+                        _ => Err(PangError::ExecutionError),
+                    }
+                    _ => Err(PangError::ExecutionError),
+                }
+            },
+            _ => Err(PangError::ExecutionError),
+        },
+        None => Err(PangError::ExecutionError),
+    }
 }
 
 /// Makes a Instance or Template entry in the backend
@@ -129,16 +194,36 @@ fn create_statement(context: Node, child: Option<Box<Node>>, loc: usize) -> Resu
 }
 
 /// Deletes data from the backend
-fn delete_statement(context: Node, child: Option<Box<Node>>, loc: usize) -> Result<QueryResult, PangError> {
-    
-    todo!()
+fn delete_statement(context: Node, child: Option<Box<Node>>, loc: usize) -> Result<Vec<QueryResult>, PangError> {
+    let name = match context {
+        Node::Literal(name, _) => Ok(name),
+        _ => Err(PangError::ExecutionError),
+    }?;
+    Ok(vec![match child {
+        Some(child) => match *child {
+            Node::Statement { variant: _, context, child: _ } => {
+                match *context {
+                    Node::Token(token, _) => match token {
+                        Token::Template => {
+                            Ok(backend::remove_template(name, loc)?.into())
+                        },
+                        Token::Instance => {
+                            Ok(backend::remove_instance(name, loc)?.into())
+                        },
+                        _ => Err(PangError::ExecutionError),
+                    },
+                    _ => Err(PangError::ExecutionError),
+                }
+            },
+            _ => Err(PangError::ExecutionError),
+        },
+        None => Err(PangError::ExecutionError),
+    }?])
 }
 
 /// Query the parsed data from memory
 pub fn data(lines: Vec<Vec<TokenMatch>>) -> String {
-    let now = Instant::now();
     let ast = ast::parse(lines);
-    plog!("AST done in: {:?}", now.elapsed());
     match ast {
         Ok(ast) => match exec(ast) {
             Ok(res) => res,

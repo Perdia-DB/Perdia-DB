@@ -45,7 +45,7 @@ STRING "First" VALUE "Nothing";
 STRING "Second" VALUE "Nothing";
 STRING "Third" VALUE "Nothing";
 INTEGER "Day" VALUE 1;
-FLOAT "Seconds";
+FLOAT "Seconds" VALUE 0.0;
 END "DAY";
 ```
 

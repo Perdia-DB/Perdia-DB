@@ -21,7 +21,7 @@ pub fn push_instance(instance: Instance, loc: usize) -> Result<(), PangError> {
         t.name == instance.name
     }).collect();
     if res.len() > 0 {
-        return Err(PangError::TemplateAlreadyExists(res[0].name.clone(), loc))
+        return Err(PangError::InstanceAlreadyExists(res[0].name.clone(), loc))
     }
 
     mutex.push(instance);
@@ -41,7 +41,13 @@ pub fn remove_instance(name: String, loc: usize) -> Result<Instance, PangError> 
             return Err(PangError::InstanceNonExistent(name, loc))
         }
     }
-    Ok(mutex.swap_remove(index))
+    if mutex.len() > 1 {
+        Ok(mutex.swap_remove(index))
+    } else if mutex.len() != 0 {
+        Ok(mutex.remove(index))
+    } else {
+        Err(PangError::InstanceNonExistent(name, loc))
+    }
 }
 
 /// Removes a [`Template`] from the static [`TEMPLATES`] mutex based on a name and returns the removed element
@@ -57,7 +63,13 @@ pub fn remove_template(name: String, loc: usize) -> Result<Template, PangError> 
             return Err(PangError::TemplateNonExistent(name, loc))
         }
     }
-    Ok(mutex.swap_remove(index))
+    if mutex.len() > 1 {
+        Ok(mutex.swap_remove(index))
+    } else if mutex.len() != 0 {
+        Ok(mutex.remove(index))
+    } else {
+        Err(PangError::InstanceNonExistent(name, loc))
+    }
 }
 
 /// Copies a [`Instance`] from the static [`INSTANCES`] mutex based on a name and returns it
@@ -90,4 +102,16 @@ pub fn copy_template(name: String, loc: usize) -> Result<Template, PangError> {
         }
     }
     Ok(mutex.get(index).unwrap().clone())
+}
+
+/// Copies the whole [`TEMPLATES`] vec.
+pub fn copy_templates() -> Vec<Template> {
+    let mutex = TEMPLATES.lock().unwrap();
+    return mutex.clone();
+}
+
+/// Copies the whole [`INSTANCES`] vec.
+pub fn copy_instances() -> Vec<Instance> {
+    let mutex = INSTANCES.lock().unwrap();
+    return mutex.clone();
 }
