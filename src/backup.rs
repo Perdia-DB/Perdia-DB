@@ -1,6 +1,6 @@
-use std::{sync::{Arc, Mutex, mpsc::{self, Receiver, Sender}, atomic::{AtomicBool, Ordering}}, thread::{self, JoinHandle}, time::{Duration, Instant}};
+use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread::{self, JoinHandle}, time::{Instant}, path::Path};
 use lazy_static::lazy_static;
-use crate::{data::{INSTANCES, TEMPLATES, template::Template}, plog, pwarn, perr};
+use crate::{data::{INSTANCES, TEMPLATES, structure::{Template, Instance}}, plog, pwarn, perr};
 
 lazy_static! {
     static ref SAVE_DIR: String = std::env::var("DIR").unwrap_or("./backup/".to_string());
@@ -19,12 +19,11 @@ impl SaveWorker {
         let shutdown = Arc::new(AtomicBool::new(false));
         let arc = Arc::clone(&shutdown);
         let handle = thread::spawn(move || SaveWorker::background(arc));
-        match std::fs::try_exists(SAVE_DIR.to_string()) {
-            Ok(_) => {},
-            Err(_) => match std::fs::create_dir(SAVE_DIR.to_string()) {
+        if !Path::new(&SAVE_DIR.to_string()).exists() {
+            match std::fs::create_dir(SAVE_DIR.to_string()) {
                 Ok(_) => plog!("Created save-directory!"),
                 Err(_) => pwarn!("Failed to create save-directory!"),
-            },
+            }
         }
         Self { 
             shutdown,
@@ -39,7 +38,7 @@ impl SaveWorker {
 
         match instances_res {
             Ok(json_string) => {
-                match serde_json::from_str::<Vec<Template>>(&json_string) {
+                match serde_json::from_str::<Vec<Instance>>(&json_string) {
                     Ok(instances) => {
                         let mut mutex = INSTANCES.lock().unwrap();
                         *mutex = instances;

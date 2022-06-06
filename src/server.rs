@@ -1,51 +1,11 @@
-use std::future::Future;
+use std::{future::Future, time::Instant};
 
-use aes::{Aes256, cipher::{KeyInit, generic_array::GenericArray}, Aes128};
-use serde::Serialize;
-use tokio::{net::{TcpListener, TcpStream}, io::{Interest, AsyncWriteExt}};
+use tokio::{net::{TcpListener, TcpStream}, io::{AsyncWriteExt}};
 
-use crate::{lexer, query::{self, error::RequestError}, perr, plog, backup::SaveWorker, crypto::Key, pwarn};
+use crate::{lexer, query::{self}, perr, plog, backup::SaveWorker, crypto::Key};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 static BUFFER_SIZE: usize = 1048576;
-
-#[derive(Serialize)]
-struct ErrorResponse {
-    code: u8,
-    description: &'static str,
-}
-
-impl From<RequestError> for ErrorResponse {
-    fn from(err: RequestError) -> Self {
-        match err {
-            RequestError::TemplateNonExistent => ErrorResponse {
-                code: 100,
-                description: "You have tried to create an instance of a template that doesn't currently exist.",
-            },
-            RequestError::TemplateAlreadyExists => ErrorResponse {
-                code: 101,
-                description: "You have tried to create a template that already exists.",
-            },
-            RequestError::InstanceNonExistent => ErrorResponse {
-                code: 200,
-                description: "You have tried to query a instance that doesn't exist.",
-            },
-            RequestError::InstanceAlreadyExists => ErrorResponse {
-                code: 201,
-                description: "You have tried to create a instance that already exists.",
-            },
-            RequestError::SyntaxError => ErrorResponse {
-                code: 10,
-                description: "General syntax error in source.",
-            },
-            RequestError::SerializationError => ErrorResponse {
-                code: 1,
-                description: "Internal db error, failed to serialize to json string.",
-            },
-        }
-    }
-}
-
 
 struct Server {
     listener: TcpListener,
@@ -64,7 +24,9 @@ impl Server {
         let source = String::from_utf8(data)?;
         // Removing trailing padding 0's from decrypted query
         let source = source.trim_matches(char::from(0)).to_string();
+        let now = Instant::now();
         let result = query::data(lexer::parse(source));
+        plog!("Execution done in: {:?}", now.elapsed());
         self.send(stream, result).await?;
 
         stream.shutdown().await?;
@@ -72,15 +34,8 @@ impl Server {
     }
 
     /// Send serialized data as json-string or send error message.
-    async fn send(&self, stream: &mut TcpStream, data: Result<String, RequestError>) -> Result<(), Error> {
-        let output = match data {
-            Ok(value) => value.into_bytes(),
-            Err(error) => { 
-                let response = serde_json::to_string(&ErrorResponse::from(error)).unwrap();
-                response.into_bytes()
-            },
-        };
-        stream.write(&self.encrypt(output)).await?;
+    async fn send(&self, stream: &mut TcpStream, data: String) -> Result<(), Error> {
+        stream.write(&self.encrypt(data.into_bytes())).await?;
         Ok(())
     }
 
@@ -97,7 +52,7 @@ impl Server {
     /// Process incoming requests in a loop.
     async fn run(&mut self) -> Result<(), Error> {
         loop {
-            let (mut stream, addr) = self.listener.accept().await?;
+            let (mut stream, _) = self.listener.accept().await?;
             self.process(&mut stream).await?;
         }
     }

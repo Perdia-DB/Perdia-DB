@@ -1,0 +1,5 @@
+# Custom Dictionary Words
+ENDL
+perr
+plog
+pwarn
