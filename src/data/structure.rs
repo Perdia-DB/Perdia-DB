@@ -22,10 +22,10 @@ impl Template {
 }
 
 /// The core structure of the in-memory values.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Deserialize, Clone, PartialEq, Debug)]
 pub struct Instance {
     pub name: String,
-    #[serde(skip_serializing)]
+    //#[serde(skip_serializing)]
     pub template: Template,
     pub data: LinkedHashMap<String, Data>
 }

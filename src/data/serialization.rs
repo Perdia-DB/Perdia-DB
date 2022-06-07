@@ -1,4 +1,6 @@
-use serde::{Deserialize, de::Visitor, Serialize};
+use serde::{Deserialize, de::Visitor, Serialize, ser::SerializeStruct};
+
+use super::structure::Instance;
 
 pub union DataUnion {
     pub string: &'static str,
@@ -274,5 +276,17 @@ impl<'de> Visitor<'de> for DATAVisitor {
             data_type: DataType::STRING,
             data: DataUnion { string: v },
         })
+    }
+}
+
+impl Serialize for Instance {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        let mut structure = serializer.serialize_struct("Instance", 3)?;
+        structure.serialize_field("name", &self.name)?;
+        structure.serialize_field("template", &self.template.name)?;
+        structure.serialize_field("data", &self.data)?;
+        structure.end()
     }
 }
