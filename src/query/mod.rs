@@ -4,7 +4,7 @@ use crate::lexer::data::{Token, TokenMatch};
 
 use self::{backend::{push_template, remove_instance, push_instance}, prop::{create_template_prop, create_select_prop}};
 
-mod backend;
+pub mod backend;
 mod prop;
 
 #[derive(Serialize, Deserialize)]

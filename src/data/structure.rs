@@ -22,7 +22,7 @@ impl Template {
 }
 
 /// The core structure of the in-memory values.
-#[derive(Deserialize, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Instance {
     pub name: String,
     //#[serde(skip_serializing)]

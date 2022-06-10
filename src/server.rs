@@ -1,4 +1,4 @@
-use std::{future::Future, time::Instant};
+use std::{future::Future};
 
 use tokio::{net::{TcpListener, TcpStream}, io::{AsyncWriteExt}};
 
@@ -24,9 +24,7 @@ impl Server {
         let source = String::from_utf8(data)?;
         // Removing trailing padding 0's from decrypted query
         let source = source.trim_matches(char::from(0)).to_string();
-        let now = Instant::now();
         let result = query::data(lexer::parse(source));
-        plog!("Execution done in: {:?}", now.elapsed());
         self.send(stream, result).await?;
 
         stream.shutdown().await?;

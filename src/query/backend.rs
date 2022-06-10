@@ -52,24 +52,35 @@ pub fn remove_instance(name: String, loc: usize) -> Result<Instance, PangError> 
 
 /// Removes a [`Template`] from the static [`TEMPLATES`] mutex based on a name and returns the removed element
 pub fn remove_template(name: String, loc: usize) -> Result<Template, PangError> {
-    let mut mutex = TEMPLATES.lock().unwrap();
+    let mut temp_mutex = TEMPLATES.lock().unwrap();
     let mut index = 0;
-    for (i, template) in mutex.iter().enumerate() {
+    for (i, template) in temp_mutex.iter().enumerate() {
         if template.name == name {
             index = i;
             break;
         }
-        if mutex.len()-1 == i {
+        if temp_mutex.len()-1 == i {
             return Err(PangError::TemplateNonExistent(name, loc))
         }
     }
-    if mutex.len() > 1 {
-        Ok(mutex.swap_remove(index))
-    } else if mutex.len() != 0 {
-        Ok(mutex.remove(index))
-    } else {
-        Err(PangError::InstanceNonExistent(name, loc))
-    }
+    // Remove template
+    let temp = {
+        if temp_mutex.len() > 1 {
+            Ok(temp_mutex.swap_remove(index))
+        } else if temp_mutex.len() != 0 {
+            Ok(temp_mutex.remove(index))
+        } else {
+            Err(PangError::InstanceNonExistent(name, loc))
+        }
+    }?;
+
+    // Remove instances
+    let mut inst_mutex = INSTANCES.lock().unwrap();
+    inst_mutex.drain_filter(|inst| {
+        inst.template == temp
+    });
+
+    Ok(temp)
 }
 
 /// Copies a [`Instance`] from the static [`INSTANCES`] mutex based on a name and returns it

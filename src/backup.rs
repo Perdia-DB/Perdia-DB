@@ -36,20 +36,6 @@ impl SaveWorker {
         let instances_res = std::fs::read_to_string(format!("{}/instances.json", SAVE_DIR.to_string()));
         let templates_res = std::fs::read_to_string(format!("{}/templates.json", SAVE_DIR.to_string()));
 
-        match instances_res {
-            Ok(json_string) => {
-                match serde_json::from_str::<Vec<Instance>>(&json_string) {
-                    Ok(instances) => {
-                        let mut mutex = INSTANCES.lock().unwrap();
-                        *mutex = instances;
-                        plog!("Successfully loaded instance backup!")
-                    },
-                    Err(_) => pwarn!("No previous backup file was invalid!"),
-                }
-            },
-            Err(_) => pwarn!("No previous backup file for templates!"),
-        }
-
         match templates_res {
             Ok(json_string) => {
                 match serde_json::from_str::<Vec<Template>>(&json_string) {
@@ -58,10 +44,24 @@ impl SaveWorker {
                         *mutex = templates;
                         plog!("Successfully loaded template backup!")
                     },
-                    Err(_) => pwarn!("No previous backup file was invalid!"),
+                    Err(err) => pwarn!("{:?}", err),
                 }
             },
             Err(_) => pwarn!("No previous backup file for instances!"),
+        }
+
+        match instances_res {
+            Ok(json_string) => {
+                match serde_json::from_str::<Vec<Instance>>(&json_string) {
+                    Ok(instances) => {
+                        let mut mutex = INSTANCES.lock().unwrap();
+                        *mutex = instances;
+                        plog!("Successfully loaded instance backup!")
+                    },
+                    Err(err) => pwarn!("{:?}", err),
+                }
+            },
+            Err(_) => pwarn!("No previous backup file for templates!"),
         }
     }
 
@@ -91,7 +91,6 @@ impl SaveWorker {
         }
         plog!("Shutting down background process...");
         SaveWorker::save();
-
     }
 
     /// Gracefully shutdown the SaveWorker and it's background process.
