@@ -1,4 +1,4 @@
-use serde::{Deserialize, de::{Visitor, Error, self}, Serialize, ser::SerializeStruct};
+use serde::{Deserialize, de::{Visitor, self}, Serialize, ser::SerializeStruct};
 
 use crate::query;
 
