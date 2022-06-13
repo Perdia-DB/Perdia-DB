@@ -68,9 +68,10 @@ impl TokenDefinition {
                 let capture = capture.get(0).unwrap();
                 let mut exists = false;
 
-                already_matched.iter().for_each(|a_match| {
+                for a_match in already_matched.iter() {
                     exists = Self::range_overlap(capture.start()..capture.end(), a_match.start..a_match.end);
-                });
+                    if exists { break }
+                };
                 
                 if !exists {
                     result.push(
@@ -89,8 +90,7 @@ impl TokenDefinition {
     }
 
     /// Returns true if first [`Range`] is overlapping with the second [`Range`]
-    fn range_overlap(first: Range<usize>, second: Range<usize>) -> bool {
-        (first.start >= second.start && first.start <= second.end) ||
-        (first.end-1 >= second.start && first.end-1 <= second.end)
+    pub fn range_overlap(first: Range<usize>, second: Range<usize>) -> bool {
+        first.end-1 >= second.start && second.end-1 >= first.start
     }
 }

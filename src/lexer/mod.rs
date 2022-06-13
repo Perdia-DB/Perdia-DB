@@ -19,7 +19,6 @@ pub fn parse(source: String) -> Vec<Vec<TokenMatch>> {
             definition.match_text(&source, &mut token_matches)
         );
     token_matches.sort_by(|a, b| a.start.cmp(&b.start));
-
     let mut lines = Vec::new();
     token_matches.split(|m| m.token == Token::ENDL)
     .collect::<Vec<&[TokenMatch]>>().iter()
