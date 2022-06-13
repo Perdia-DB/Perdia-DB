@@ -24,13 +24,9 @@ impl Server {
         let source = String::from_utf8(data)?;
         // Removing trailing padding 0's from decrypted query
         let source = source.trim_matches(char::from(0)).to_string();
-        //plog!("{}", source);
         let l = lexer::parse(source);
-        plog!("{:?}", l);
         let result = query::data(l);
-        plog!("{}", result);
         self.send(stream, result).await?;
-        //plog!("{}", TokenDefinition::range_overlap(140..144, 141..143));
         stream.shutdown().await?;
         Ok(())
     }
